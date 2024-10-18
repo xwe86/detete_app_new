@@ -18,13 +18,10 @@ package org.tensorflow.lite.examples.objectdetection
 
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
+import androidx.fragment.app.Fragment
 import org.tensorflow.lite.examples.objectdetection.databinding.ActivityMainBinding
+import org.tensorflow.lite.examples.objectdetection.fragments.*
 
 /**
  * Main entry point into our app. This app follows the single-activity pattern, and all
@@ -34,10 +31,62 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var activityMainBinding: ActivityMainBinding
 
+    private var currentFragment: Fragment? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityMainBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(activityMainBinding.root)
+
+        // 初始显示的 Fragment
+        currentFragment = DefualtFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, currentFragment!!)
+            .commit()
+
+        // 车牌
+        activityMainBinding.carPlateButton?.setOnClickListener {
+            switchFragment(CameraFragment())
+        }
+        //车架
+        activityMainBinding.vinIdButton?.setOnClickListener {
+            switchFragment(VINFragment())
+        }
+        // 身份证
+        activityMainBinding.idCardButton?.setOnClickListener {
+            switchFragment(IDCamraFragment())
+        }
+        //行驶证
+        activityMainBinding.vehicleIdButton?.setOnClickListener {
+            switchFragment(DriverIdCardFragment())
+        }
+        // 驾驶证
+        activityMainBinding.driverIdButton?.setOnClickListener {
+            switchFragment(VehicleIdCardFragment())
+        }
+        //前45°
+        activityMainBinding.carFront45Button?.setOnClickListener {
+            switchFragment(CarFront45Fragment())
+        }
+        // 后45°
+        activityMainBinding.carBack45Button?.setOnClickListener {
+            switchFragment(CarBack45Fragment())
+        }
+        //损伤识别
+        activityMainBinding.carDamageButton?.setOnClickListener {
+            switchFragment(VehicleDamageFragment())
+        }
+
+
+
+
+    }
+
+    private fun switchFragment(fragment: Fragment) {
+        currentFragment = fragment
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .commit()
     }
 
     override fun onBackPressed() {

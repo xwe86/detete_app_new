@@ -46,6 +46,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation
 import com.android.example.cameraxbasic.utils.ANIMATION_FAST_MILLIS
 import com.android.example.cameraxbasic.utils.ANIMATION_SLOW_MILLIS
+
 import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
 import org.tensorflow.lite.examples.objectdetection.databinding.ActivityMainBinding
@@ -63,8 +64,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private val TAG = "ObjectDetection"
     private lateinit var windowManager: WindowManager
-    private var _fragmentCameraBinding: FragmentCameraBinding? = null
     private val animatorSet: AnimatorSet = AnimatorSet()
+    private var _fragmentCameraBinding: FragmentCameraBinding? = null
     private val fragmentCameraBinding
         get() = _fragmentCameraBinding!!
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
@@ -86,6 +87,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var tipLeftTime = 3000L
     private var tipOKTime = 3000L
 
+
     override fun onResume() {
         super.onResume()
         // Make sure that all permissions are still present, since the
@@ -94,12 +96,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             Navigation.findNavController(requireActivity(), R.id.fragment_container)
                 .navigate(CameraFragmentDirections.actionCameraToPermissions())
         }
+        handler.post(timerRunnable)
     }
 
     override fun onDestroyView() {
-        _fragmentCameraBinding = null
-        super.onDestroyView()
 
+        super.onDestroyView()
+        _fragmentCameraBinding = null
         // Shut down our background executor
         cameraExecutor.shutdown()
     }
@@ -134,7 +137,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             playLeftStop()
             // 在这里更新UI显示"识别成功"文案
             showTipsText("识别成功")
-        }, tipColseTime +tipLeftTime +tipOKTime)
+        }, tipColseTime + tipLeftTime + tipOKTime)
         return fragmentCameraBinding.root
     }
 
@@ -505,27 +508,32 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         activity?.runOnUiThread {
 //            fragmentCameraBinding.bottomSheetLayout.inferenceTimeVal.text =
 //                            String.format("%d ms", inferenceTime)
-            fragmentCameraBinding.inferenceTimeVal.text =
-                String.format("%d ms", inferenceTime)
 
-            //处理识别结果
-            val currentTime = System.currentTimeMillis()
-            // 每秒更新一次提示
-            if (currentTime - lastRecordTime >= 1000) {
-                // 处理图像并记录结果
-                recordAnalysisResult(results, "" + lastRecordTime)
-                lastRecordTime = currentTime
+            try {
+                fragmentCameraBinding.inferenceTimeVal.text =
+                    String.format("%d ms", inferenceTime)
+
+                //处理识别结果
+                val currentTime = System.currentTimeMillis()
+                // 每秒更新一次提示
+                if (currentTime - lastRecordTime >= 1000) {
+                    // 处理图像并记录结果
+                    recordAnalysisResult(results, "" + lastRecordTime)
+                    lastRecordTime = currentTime
+                }
+
+                // Pass necessary information to OverlayView for drawing on the canvas
+                fragmentCameraBinding.overlay.setResults(
+                    results ?: LinkedList<Detection>(),
+                    imageHeight,
+                    imageWidth
+                )
+
+                // Force a redraw
+                fragmentCameraBinding.overlay.invalidate()
+            } catch (e: Exception) {
+                Log.e("相机","相机异常",e)
             }
-
-            // Pass necessary information to OverlayView for drawing on the canvas
-            fragmentCameraBinding.overlay.setResults(
-                results ?: LinkedList<Detection>(),
-                imageHeight,
-                imageWidth
-            )
-
-            // Force a redraw
-            fragmentCameraBinding.overlay.invalidate()
         }
     }
 
@@ -577,10 +585,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     }
 
 
-//    override fun onResume() {
-//        super.onResume()
-//        handler.post(timerRunnable)
-//    }
 
 
     /**
@@ -601,9 +605,19 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     }
     override fun onPause() {
         super.onPause()
-        handler.removeCallbacks(timerRunnable)
+        handler.removeCallbacksAndMessages(null)
+        val imageView = fragmentCameraBinding.arrowLeft
+        imageView.visibility = View.INVISIBLE
+        // 设置目标View,播放动画
+        animatorSet.cancel()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacksAndMessages(null)
+        // 设置目标View,播放动画
+        animatorSet.cancel()
+    }
     override fun onError(error: String) {
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()

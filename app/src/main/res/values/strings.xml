@@ -54,4 +54,16 @@
         <item>EfficientDet Lite2</item>
         <item>EfficientDet TEST</item>
     </string-array>
+
+
+    <string name="car_plate_text">车牌识别</string>
+    <string name="vid_text">车架</string>
+    <string name="id_card_text">身份证</string>
+    <string name="driver_id_text">行驶证</string>
+    <string name="vehicle_id_text">驾驶证</string>
+    <string name="car_front45_text">前45度</string>
+    <string name="car_back45_text">后45度</string>
+    <string name="vehicle_damage_text">损伤识别</string>=
+    <string name="default_fr_msg">开始拍照记录材料（引导页）</string>
+
 </resources>
