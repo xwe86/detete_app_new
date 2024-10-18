@@ -15,7 +15,6 @@
  */
 package org.tensorflow.lite.examples.objectdetection.fragments
 
-import android.animation.AnimatorInflater
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
@@ -26,6 +25,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.drawable.ColorDrawable
 import android.hardware.display.DisplayManager
 import android.os.Build
@@ -36,7 +36,6 @@ import android.provider.MediaStore
 import android.util.Log
 import android.view.*
 import android.view.animation.LinearInterpolator
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
@@ -46,10 +45,8 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation
 import com.android.example.cameraxbasic.utils.ANIMATION_FAST_MILLIS
 import com.android.example.cameraxbasic.utils.ANIMATION_SLOW_MILLIS
-
 import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
-import org.tensorflow.lite.examples.objectdetection.databinding.ActivityMainBinding
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCameraBinding
 import org.tensorflow.lite.task.vision.detector.Detection
 import java.text.SimpleDateFormat
@@ -82,6 +79,15 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
     private var lastRecordTime = 0L // 上次记录的时间戳
+
+    //识别结果暂存列表
+    val recognitionResults: MutableList<Detection>? = mutableListOf()
+
+    //识别统计结果的间隔， 1s内目标数据出现了，就算识别成功
+    private val recognitionInterval = 1000L
+
+
+
     private val handler = Handler(Looper.getMainLooper())
     private var tipColseTime = 3000L
     private var tipLeftTime = 3000L
@@ -108,7 +114,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     }
 
 
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -130,7 +135,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             playLeft()
             // 在这里更新UI显示"向左移动相机"文案
             showTipsText("向左移动相机")
-        }, tipColseTime +tipLeftTime)
+        }, tipColseTime + tipLeftTime)
 
         // 显示"识别成功"文案
         handler.postDelayed({
@@ -164,21 +169,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         animatorSet.cancel()
     }
 
-//    private fun playRight() {
-//        val animatorSet = AnimatorSet()
-//        val imageView = fragmentCameraBinding.arrowBottom
-//        imageView.visibility = View.VISIBLE
-//        val translationAnim = ObjectAnimator.ofFloat(imageView, "translationY", 680f, 830f)
-//        translationAnim.repeatCount = ValueAnimator.INFINITE // 设置重复次数为无限
-//        translationAnim.duration = 1000 // 设置动画持续时间
-//        translationAnim.interpolator = LinearInterpolator() // 设置插值器，可以使动画匀速播放
-//        val alphaAnim = ObjectAnimator.ofFloat(imageView, "alpha", 1.0f, 0.0f)
-//        alphaAnim.repeatCount = ValueAnimator.INFINITE
-//        alphaAnim.duration = 1000
-//        animatorSet.playTogether(translationAnim, alphaAnim)
-//        // 设置目标View,播放动画
-//        animatorSet.start()
-//    }
 
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -198,106 +188,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             setUpCamera()
         }
 
-
-        // Attach listeners to UI control widgets
-//        initBottomSheetControls()
     }
 
-//    private fun initBottomSheetControls() {
-//        // When clicked, lower detection score threshold floor
-//        fragmentCameraBinding.bottomSheetLayout.thresholdMinus.setOnClickListener {
-//            if (objectDetectorHelper.threshold >= 0.1) {
-//                objectDetectorHelper.threshold -= 0.1f
-//                updateControlsUi()
-//            }
-//        }
-//
-//        // When clicked, raise detection score threshold floor
-//        fragmentCameraBinding.bottomSheetLayout.thresholdPlus.setOnClickListener {
-//            if (objectDetectorHelper.threshold <= 0.8) {
-//                objectDetectorHelper.threshold += 0.1f
-//                updateControlsUi()
-//            }
-//        }
-//
-//        // When clicked, reduce the number of objects that can be detected at a time
-//        fragmentCameraBinding.bottomSheetLayout.maxResultsMinus.setOnClickListener {
-//            if (objectDetectorHelper.maxResults > 1) {
-//                objectDetectorHelper.maxResults--
-//                updateControlsUi()
-//            }
-//        }
-//
-//        // When clicked, increase the number of objects that can be detected at a time
-//        fragmentCameraBinding.bottomSheetLayout.maxResultsPlus.setOnClickListener {
-//            if (objectDetectorHelper.maxResults < 5) {
-//                objectDetectorHelper.maxResults++
-//                updateControlsUi()
-//            }
-//        }
-//
-//        // When clicked, decrease the number of threads used for detection
-//        fragmentCameraBinding.bottomSheetLayout.threadsMinus.setOnClickListener {
-//            if (objectDetectorHelper.numThreads > 1) {
-//                objectDetectorHelper.numThreads--
-//                updateControlsUi()
-//            }
-//        }
-//
-//        // When clicked, increase the number of threads used for detection
-//        fragmentCameraBinding.bottomSheetLayout.threadsPlus.setOnClickListener {
-//            if (objectDetectorHelper.numThreads < 4) {
-//                objectDetectorHelper.numThreads++
-//                updateControlsUi()
-//            }
-//        }
-//
-//        // When clicked, change the underlying hardware used for inference. Current options are CPU
-//        // GPU, and NNAPI
-//        fragmentCameraBinding.bottomSheetLayout.spinnerDelegate.setSelection(0, false)
-//        fragmentCameraBinding.bottomSheetLayout.spinnerDelegate.onItemSelectedListener =
-//            object : AdapterView.OnItemSelectedListener {
-//                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-//                    objectDetectorHelper.currentDelegate = p2
-//                    updateControlsUi()
-//                }
-//
-//                override fun onNothingSelected(p0: AdapterView<*>?) {
-//                    /* no op */
-//                }
-//            }
-//
-//        // When clicked, change the underlying model used for object detection
-//        fragmentCameraBinding.bottomSheetLayout.spinnerModel.setSelection(0, false)
-//        fragmentCameraBinding.bottomSheetLayout.spinnerModel.onItemSelectedListener =
-//            object : AdapterView.OnItemSelectedListener {
-//                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-//                    objectDetectorHelper.currentModel = p2
-//                    updateControlsUi()
-//                }
-//
-//                override fun onNothingSelected(p0: AdapterView<*>?) {
-//                    /* no op */
-//                }
-//            }
-//    }
 
-    // Update the values displayed in the bottom sheet. Reset detector.
-//    private fun updateControlsUi() {
-//        fragmentCameraBinding.bottomSheetLayout.maxResultsValue.text =
-//            objectDetectorHelper.maxResults.toString()
-//        fragmentCameraBinding.bottomSheetLayout.thresholdValue.text =
-//            String.format("%.2f", objectDetectorHelper.threshold)
-//        fragmentCameraBinding.bottomSheetLayout.threadsValue.text =
-//            objectDetectorHelper.numThreads.toString()
-//
-//        // Needs to be cleared instead of reinitialized because the GPU
-//        // delegate needs to be initialized on the thread using it when applicable
-//        objectDetectorHelper.clearObjectDetector()
-//        fragmentCameraBinding.overlay.clear()
-//    }
-
-    // Initialize CameraX, and prepare to bind the camera use cases
     private fun setUpCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener(
@@ -312,11 +205,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         )
     }
 
-    // 获取当前屏幕方向
-    fun isLandscape(): Boolean {
-        val orientation = resources.configuration.orientation
-        return orientation == Configuration.ORIENTATION_LANDSCAPE
-    }
 
 // 在 Activity 中调用 isLandscape() 函数判断屏幕方向
 
@@ -335,6 +223,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         // CameraSelector - makes assumption that we're only using the back camera
         val cameraSelector =
             CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+        lastRecordTime = System.currentTimeMillis();
 
         // Preview. Only using the 4:3 ratio because this is the closest to our models
         preview =
@@ -384,66 +273,11 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     }
                 }
         // Listener for button used to capture photo
+        //监听按钮拍照
         fragmentCameraBinding?.cameraCaptureButton?.setOnClickListener {
+            // 存图
+            saveImage()
 
-            // Get a stable reference of the modifiable image capture use case
-            imageCapture?.let { imageCapture ->
-
-                // Create time stamped name and MediaStore entry.
-                val name = SimpleDateFormat(FILENAME, Locale.US)
-                    .format(System.currentTimeMillis())
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-                    put(MediaStore.MediaColumns.MIME_TYPE, PHOTO_TYPE)
-                    if(Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                        val appName = "test"
-                        put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/${appName}")
-                    }
-                }
-
-                // Create output options object which contains file + metadata
-                val outputOptions = ImageCapture.OutputFileOptions
-                    .Builder(requireContext().contentResolver,
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        contentValues)
-                    .build()
-
-                // Setup image capture listener which is triggered after photo has been taken
-                imageCapture.takePicture(
-                    outputOptions, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
-                        override fun onError(exc: ImageCaptureException) {
-                            Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-                        }
-
-                        override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                            val savedUri = output.savedUri
-                            Log.d(TAG, "Photo capture succeeded: $savedUri")
-
-
-                            // Implicit broadcasts will be ignored for devices running API level >= 24
-                            // so if you only target API level 24+ you can remove this statement
-                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                                // Suppress deprecated Camera usage needed for API level 23 and below
-                                @Suppress("DEPRECATION")
-                                requireActivity().sendBroadcast(
-                                    Intent(android.hardware.Camera.ACTION_NEW_PICTURE, savedUri)
-                                )
-                            }
-                        }
-                    })
-
-                // We can only change the foreground Drawable using API level 23+ API
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-                    // Display flash animation to indicate that photo was captured
-                    fragmentCameraBinding.root.postDelayed({
-                        fragmentCameraBinding.root.foreground = ColorDrawable(Color.WHITE)
-                        fragmentCameraBinding.root.postDelayed(
-                            { fragmentCameraBinding.root.foreground = null }, ANIMATION_FAST_MILLIS
-                        )
-                    }, ANIMATION_SLOW_MILLIS)
-                }
-            }
         }
 
         // Must unbind the use-cases before rebinding them
@@ -452,7 +286,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         try {
             // A variable number of use-cases can be passed here -
             // camera provides access to CameraControl & CameraInfo
-            camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+            camera = cameraProvider.bindToLifecycle(
+                this, cameraSelector, preview, imageCapture, imageAnalyzer
+            )
 
             // Attach the viewfinder's surface provider to preview use case
             preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
@@ -461,6 +297,71 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
     }
 
+    /**
+     * 保存相机当前的图片
+     */
+    private fun saveImage() {
+        imageCapture?.let { imageCapture ->
+
+            Log.i("相机", "开点击了拍照")
+            // Create time stamped name and MediaStore entry.
+            val name = SimpleDateFormat(FILENAME, Locale.US)
+                .format(System.currentTimeMillis())
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+                put(MediaStore.MediaColumns.MIME_TYPE, PHOTO_TYPE)
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                    val appName = "test"
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/${appName}")
+                }
+            }
+
+            // Create output options object which contains file + metadata
+            val outputOptions = ImageCapture.OutputFileOptions
+                .Builder(
+                    requireContext().contentResolver,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+                .build()
+
+            // Setup image capture listener which is triggered after photo has been taken
+            imageCapture.takePicture(
+                outputOptions, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
+                    override fun onError(exc: ImageCaptureException) {
+                        Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+                    }
+
+                    override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                        val savedUri = output.savedUri
+                        Log.d(TAG, "Photo capture succeeded: $savedUri")
+
+
+                        // Implicit broadcasts will be ignored for devices running API level >= 24
+                        // so if you only target API level 24+ you can remove this statement
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                            // Suppress deprecated Camera usage needed for API level 23 and below
+                            @Suppress("DEPRECATION")
+                            requireActivity().sendBroadcast(
+                                Intent(android.hardware.Camera.ACTION_NEW_PICTURE, savedUri)
+                            )
+                        }
+                    }
+                })
+
+            // We can only change the foreground Drawable using API level 23+ API
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+                // Display flash animation to indicate that photo was captured
+                fragmentCameraBinding.root.postDelayed({
+                    fragmentCameraBinding.root.foreground = ColorDrawable(Color.WHITE)
+                    fragmentCameraBinding.root.postDelayed(
+                        { fragmentCameraBinding.root.foreground = null }, ANIMATION_FAST_MILLIS
+                    )
+                }, ANIMATION_SLOW_MILLIS)
+            }
+        }
+    }
 
     /**
      *  [androidx.camera.core.ImageAnalysis.Builder] requires enum value of
@@ -480,6 +381,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
         return AspectRatio.RATIO_16_9
     }
+
     //接收到图像调用识别helper 进行识别
     private fun detectObjects(image: ImageProxy) {
         // Copy out RGB bits to the shared bitmap buffer
@@ -493,12 +395,27 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        Log.d("相机","相机位置变更 ${fragmentCameraBinding.viewFinder.display.rotation}   ==>  $newConfig ")
+        Log.d(
+            "相机",
+            "相机位置变更 ${fragmentCameraBinding.viewFinder.display.rotation}   ==>  $newConfig "
+        )
         imageAnalyzer?.targetRotation = fragmentCameraBinding.viewFinder.display.rotation
     }
 
+
+    // 停止图像分析
+    private fun stopImageAnalyzer() {
+        if (imageAnalyzer != null) {
+            imageAnalyzer?.clearAnalyzer()
+            imageAnalyzer = null
+        }
+    }
+
+
     // Update UI after objects have been detected. Extracts original image height/width
     // to scale and place bounding boxes properly through OverlayView
+    //在检测到对象后更新 UI。提取原始图像高度/宽度
+    //    通过 OverlayVie 正确缩放和放置边界框
     override fun onResults(
         results: MutableList<Detection>?,
         inferenceTime: Long,
@@ -516,9 +433,11 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 //处理识别结果
                 val currentTime = System.currentTimeMillis()
                 // 每秒更新一次提示
-                if (currentTime - lastRecordTime >= 1000) {
+                if (currentTime - lastRecordTime >= recognitionInterval) {
+                    results?.let { recognitionResults?.addAll(it) }
                     // 处理图像并记录结果
                     recordAnalysisResult(results, "" + lastRecordTime)
+
                     lastRecordTime = currentTime
                 }
 
@@ -532,7 +451,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 // Force a redraw
                 fragmentCameraBinding.overlay.invalidate()
             } catch (e: Exception) {
-                Log.e("相机","相机异常",e)
+                Log.e("相机", "相机异常", e)
             }
         }
     }
@@ -577,14 +496,19 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 //                        "top :$top bottom: $bottom left: $left right: $right"
             dataSet.add(result.categories[0].label)
         }
+        if (dataSet.size>5){
+//            Toast.makeText(context, "45°识别成功开始录图像", Toast.LENGTH_SHORT).show()
+            Log.i(tag,"45°识别成功开始录图像")
+//            saveImage()
+            // 在Activity或Fragment中调用以下代码来显示Toast消息
+//            Toast.makeText(context, "45°成功保存图像", Toast.LENGTH_SHORT).show()
+        }
 
 
-        fragmentCameraBinding.detectData.text =  dataSet.joinToString(separator = ", ")
+        fragmentCameraBinding.detectData.text = dataSet.joinToString(separator = ", ")
 
 
     }
-
-
 
 
     /**
@@ -603,6 +527,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             }
         } ?: Unit
     }
+
     override fun onPause() {
         super.onPause()
         handler.removeCallbacksAndMessages(null)
@@ -610,6 +535,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         imageView.visibility = View.INVISIBLE
         // 设置目标View,播放动画
         animatorSet.cancel()
+        imageAnalyzer?.clearAnalyzer()
     }
 
     override fun onDestroy() {
@@ -618,11 +544,13 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         // 设置目标View,播放动画
         animatorSet.cancel()
     }
+
     override fun onError(error: String) {
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
         }
     }
+
     companion object {
         private const val TAG = "CameraXBasic"
         private const val FILENAME = "yyyy-MM-dd-HH-mm-ss-SSS"
