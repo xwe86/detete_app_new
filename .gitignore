@@ -1,0 +1,7 @@
+**/*.pyc
+**/.build
+**/.gradle
+**/.idea
+**/.ipynb_checkpoints
+/build/
+/app/build/
