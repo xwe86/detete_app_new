@@ -9,3 +9,4 @@
 /app/src/main/assets/efficientdet-lite1.tflite
 /app/src/main/assets/efficientdet-lite2.tflite
 /app/src/main/assets/*.tflite
+/local.properties

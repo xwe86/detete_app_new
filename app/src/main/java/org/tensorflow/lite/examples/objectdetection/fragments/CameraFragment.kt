@@ -94,14 +94,23 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var tipOKTime = 3000L
 
 
+    //从 Paused 状态恢复到 Resumed 状态时，系统会调用 onResume() 方法。
     override fun onResume() {
         super.onResume()
-        // Make sure that all permissions are still present, since the
-        // user could have removed them while the app was in paused state.
-        if (!PermissionsFragment.hasPermissions(requireContext())) {
-            Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                .navigate(CameraFragmentDirections.actionCameraToPermissions())
-        }
+//        // Make sure that all permissions are still present, since the
+//        // user could have removed them while the app was in paused state.
+//        //PermissionsFragment.hasPermissions(requireContext()) 是一个自定义方法，它通常用于检查应用是否具有特定权限，比如相机权限、存储权限等。如果应用没有所需的权限，条件判断为真。
+//        // Navigation.findNavController() 是 Navigation 组件提供的一个方法，用于查找与给定 Activity 相关联的 NavController
+//        if (!PermissionsFragment.hasPermissions(requireContext())) {
+//            //Navigation.findNavController() 是 Navigation 组件提供的一个方法，用于查找与给定 Activity 相关联的 NavController。
+//            //requireActivity() 返回当前 Fragment 所关联的 Activity。
+//            //R.id.fragment_container 是用于承载 Fragment 的容器的 ID。通常，这是在布局文件中定义的 NavHostFragment 的 ID。
+//            Navigation.findNavController(requireActivity(), R.id.fragment_container)
+//                .navigate(CameraFragmentDirections.actionCameraToPermissions())
+//        }
+//
+
+
         handler.post(timerRunnable)
     }
 
@@ -121,6 +130,16 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     ): View {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
         windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+        val permissionFragment = PermissionsFragment()
+        if (!PermissionsFragment.hasPermissions(requireContext())) {
+            // 请求授权
+            parentFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, permissionFragment)
+                    .addToBackStack(null)
+                    .commit()
+        }
+
 
 
 //        playRight()
@@ -219,7 +238,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         val screenAspectRatio = aspectRatio(metrics.width(), metrics.height())
         Log.d(TAG, "Preview aspect ratio: $screenAspectRatio")
 
-        val rotation = fragmentCameraBinding.viewFinder.display.rotation
+
         // CameraSelector - makes assumption that we're only using the back camera
         val cameraSelector =
             CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
@@ -231,9 +250,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
                 .setTargetRotation(Surface.ROTATION_0)
                 .build()
-        // 获取屏幕旋转角度
-
-        Log.d("相机", "屏幕旋转的角度：${rotation}")
 
 
         // ImageCapture
@@ -241,10 +257,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             // We request aspect ratio but no resolution to match preview config, but letting
             // CameraX optimize for whatever specific resolution best fits our use cases
-            .setTargetAspectRatio(screenAspectRatio)
+            .setTargetAspectRatio(AspectRatio.RATIO_4_3)
             // Set initial target rotation, we will have to call this again if rotation changes
             // during the lifecycle of this use case
-            .setTargetRotation(rotation)
+            .setTargetRotation(Surface.ROTATION_0)
             .build()
 
 
@@ -267,6 +283,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                                 image.height,
                                 Bitmap.Config.ARGB_8888
                             )
+                            Log.d(tag, "照片尺寸${image.width} ${image.height}")
                         }
 
                         detectObjects(image)
