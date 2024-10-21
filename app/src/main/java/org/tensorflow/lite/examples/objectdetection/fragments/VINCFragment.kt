@@ -1,3 +1,18 @@
+/*
+ * Copyright 2022 The TensorFlow Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *             http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.tensorflow.lite.examples.objectdetection.fragments
 
 import android.animation.AnimatorSet
@@ -19,24 +34,14 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.WindowManager
+import android.view.*
 import android.view.animation.LinearInterpolator
 import android.widget.Toast
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.*
 import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import com.android.example.cameraxbasic.utils.ANIMATION_FAST_MILLIS
 import com.android.example.cameraxbasic.utils.ANIMATION_SLOW_MILLIS
 import okhttp3.Call
@@ -44,8 +49,8 @@ import okhttp3.Callback
 import okhttp3.Response
 import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
-import org.tensorflow.lite.examples.objectdetection.databinding.FragmentDriverIdCardBinding
-import org.tensorflow.lite.examples.objectdetection.databinding.FragmentIdCamraBinding
+import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCameraBinding
+import org.tensorflow.lite.examples.objectdetection.databinding.VincCameraBinding
 import org.tensorflow.lite.examples.objectdetection.util.FileUploader
 import org.tensorflow.lite.examples.objectdetection.util.GlobalRandomIdManager
 import org.tensorflow.lite.task.vision.detector.Detection
@@ -53,24 +58,22 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
-import java.util.HashSet
-import java.util.LinkedList
-import java.util.Locale
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
-/**
-     驾驶证识别， 参考 cameraFragment
- */
-class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
+
+class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
+
+    private val TAG = "ObjectDetection"
     private lateinit var windowManager: WindowManager
     private val animatorSet: AnimatorSet = AnimatorSet()
-    private var _fragmentDriverIdCardBinding: FragmentDriverIdCardBinding? = null
-    private val fragmentDriverIdCardBinding
-        get() = _fragmentDriverIdCardBinding!!
+    private var _fragmentCameraBinding: VincCameraBinding? = null
+    private val fragmentCameraBinding
+        get() = _fragmentCameraBinding!!
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
     private lateinit var bitmapBuffer: Bitmap
     private var displayId: Int = -1
@@ -92,10 +95,13 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     //识别统计结果的间隔， 1s内目标数据出现了，就算识别成功
     private val recognitionInterval = 1000L
 
+
+
     private val handler = Handler(Looper.getMainLooper())
     private var tipColseTime = 3000L
     private var tipLeftTime = 3000L
     private var tipOKTime = 3000L
+
 
     //从 Paused 状态恢复到 Resumed 状态时，系统会调用 onResume() 方法。
     override fun onResume() {
@@ -112,13 +118,15 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 //                .navigate(CameraFragmentDirections.actionCameraToPermissions())
 //        }
 //
+
+
         handler.post(timerRunnable)
     }
 
     override fun onDestroyView() {
 
         super.onDestroyView()
-        _fragmentDriverIdCardBinding = null
+        _fragmentCameraBinding = null
         // Shut down our background executor
         cameraExecutor.shutdown()
     }
@@ -129,24 +137,24 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _fragmentDriverIdCardBinding = FragmentDriverIdCardBinding.inflate(inflater, container, false)
+        _fragmentCameraBinding = VincCameraBinding.inflate(inflater, container, false)
         windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         val permissionFragment = PermissionsFragment()
         if (!PermissionsFragment.hasPermissions(requireContext())) {
             // 请求授权
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, permissionFragment)
-                .addToBackStack(null)
-                .commit()
+                    .replace(R.id.fragment_container, permissionFragment)
+                    .addToBackStack(null)
+                    .commit()
         }
 
-        return fragmentDriverIdCardBinding.root
+        return fragmentCameraBinding.root
     }
 
     private fun playLeft() {
 //        val animatorSet = AnimatorSet()
-        val imageView = fragmentDriverIdCardBinding.arrowLeft
+        val imageView = fragmentCameraBinding.arrowLeft
         imageView.visibility = View.VISIBLE
         val translationAnim = ObjectAnimator.ofFloat(imageView, "translationX", 200f, 50f)
         translationAnim.repeatCount = 10 // 设置重复次数为无限
@@ -161,7 +169,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     }
 
     private fun playLeftStop() {
-        val imageView = fragmentDriverIdCardBinding.arrowLeft
+        val imageView = fragmentCameraBinding.arrowLeft
         imageView.visibility = View.INVISIBLE
         // 设置目标View,播放动画
         animatorSet.cancel()
@@ -181,12 +189,13 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         // Wait for the views to be properly laid out
-        fragmentDriverIdCardBinding.viewFinder.post {
+        fragmentCameraBinding.viewFinder.post {
             // Set up the camera and its use cases
             setUpCamera()
         }
 
     }
+
 
     private fun setUpCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
@@ -226,7 +235,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         preview =
             Preview.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(fragmentDriverIdCardBinding.viewFinder.display.rotation)
+                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .build()
 
 
@@ -242,7 +251,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .setTargetAspectRatio(AspectRatio.RATIO_4_3)
             // Set initial target rotation, we will have to call this again if rotation changes
             // during the lifecycle of this use case
-            .setTargetRotation(fragmentDriverIdCardBinding.viewFinder.display.rotation)
+            .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
             .build()
 
 
@@ -250,7 +259,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         imageAnalyzer =
             ImageAnalysis.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(fragmentDriverIdCardBinding.viewFinder.display.rotation)
+                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
@@ -273,9 +282,10 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 }
         // Listener for button used to capture photo
         //监听按钮拍照
-        fragmentDriverIdCardBinding.cameraCaptureButton.setOnClickListener {
+        fragmentCameraBinding?.cameraCaptureButton?.setOnClickListener {
             // 存图
             saveImage()
+
         }
 
         // Must unbind the use-cases before rebinding them
@@ -289,7 +299,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             )
 
             // Attach the viewfinder's surface provider to preview use case
-            preview?.setSurfaceProvider(fragmentDriverIdCardBinding.viewFinder.surfaceProvider)
+            preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
         } catch (exc: Exception) {
             Log.e(TAG, "Use case binding failed", exc)
         }
@@ -346,7 +356,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
                         // 保存裁剪后的图片到新的文件
                         val croppedPhotoFile: File =
-                            File("/storage/emulated/0//Pictures/test/15.jpg")
+                            File("/storage/emulated/0//Pictures/test/12.jpg")
                         try {
                             FileOutputStream(croppedPhotoFile).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
@@ -366,7 +376,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
                         val fileUploader = FileUploader()
-                        fileUploader.uploadFile(croppedPhotoFile, "15", "",object : Callback {
+                        fileUploader.uploadFile(croppedPhotoFile, "12", "",object : Callback {
                             override fun onFailure(call: Call, e: IOException) {
                                 Log.e("45", "Upload failed: ${e.message}")
                             }
@@ -397,10 +407,10 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 
                 // Display flash animation to indicate that photo was captured
-                fragmentDriverIdCardBinding.root.postDelayed({
-                    fragmentDriverIdCardBinding.root.foreground = ColorDrawable(Color.WHITE)
-                    fragmentDriverIdCardBinding.root.postDelayed(
-                        { fragmentDriverIdCardBinding.root.foreground = null }, ANIMATION_FAST_MILLIS
+                fragmentCameraBinding.root.postDelayed({
+                    fragmentCameraBinding.root.foreground = ColorDrawable(Color.WHITE)
+                    fragmentCameraBinding.root.postDelayed(
+                        { fragmentCameraBinding.root.foreground = null }, ANIMATION_FAST_MILLIS
                     )
                 }, ANIMATION_SLOW_MILLIS)
             }
@@ -441,9 +451,9 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         super.onConfigurationChanged(newConfig)
         Log.d(
             "相机",
-            "相机位置变更 ${fragmentDriverIdCardBinding.viewFinder.display.rotation}   ==>  $newConfig "
+            "相机位置变更 ${fragmentCameraBinding.viewFinder.display.rotation}   ==>  $newConfig "
         )
-        imageAnalyzer?.targetRotation = fragmentDriverIdCardBinding.viewFinder.display.rotation
+        imageAnalyzer?.targetRotation = fragmentCameraBinding.viewFinder.display.rotation
     }
 
 
@@ -471,7 +481,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 //                            String.format("%d ms", inferenceTime)
 
             try {
-                fragmentDriverIdCardBinding.inferenceTimeVal.text =
+                fragmentCameraBinding.inferenceTimeVal.text =
                     String.format("%d ms", inferenceTime)
 
                 //处理识别结果
@@ -486,7 +496,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 }
 
                 // Pass necessary information to OverlayView for drawing on the canvas
-                fragmentDriverIdCardBinding.overlayDriverId.setResults(
+                fragmentCameraBinding.overlay.setResults(
                     results ?: LinkedList<Detection>(),
                     imageHeight,
                     imageWidth
@@ -495,7 +505,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 Log.i("相机"," imageWith：$imageWidth, imageHeight $imageHeight")
 
                 // Force a redraw
-                fragmentDriverIdCardBinding.overlayDriverId.invalidate()
+                fragmentCameraBinding.overlay.invalidate()
             } catch (e: Exception) {
                 Log.e("相机", "相机异常", e)
             }
@@ -514,7 +524,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
      * 设置提示文案
      */
     fun showTipsText(text: String) {
-        fragmentDriverIdCardBinding.detectTip.text = text
+        fragmentCameraBinding.detectTip.text = text
     }
 
 
@@ -549,7 +559,11 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             // 在Activity或Fragment中调用以下代码来显示Toast消息
 //            Toast.makeText(context, "45°成功保存图像", Toast.LENGTH_SHORT).show()
         }
-        fragmentDriverIdCardBinding.detectData.text = dataSet.joinToString(separator = ", ")
+
+
+        fragmentCameraBinding.detectData.text = dataSet.joinToString(separator = ", ")
+
+
     }
 
 
@@ -562,7 +576,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         override fun onDisplayAdded(displayId: Int) = Unit
         override fun onDisplayRemoved(displayId: Int) = Unit
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
-            if (displayId == this@DriverIdCardFragment.displayId) {
+            if (displayId == this@VINCFragment.displayId) {
                 Log.d(TAG, "Rotation changed: ${view.display.rotation}")
                 imageCapture?.targetRotation = view.display.rotation
                 imageAnalyzer?.targetRotation = view.display.rotation
@@ -573,7 +587,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     override fun onPause() {
         super.onPause()
         handler.removeCallbacksAndMessages(null)
-        val imageView = fragmentDriverIdCardBinding.arrowLeft
+        val imageView = fragmentCameraBinding.arrowLeft
         imageView.visibility = View.INVISIBLE
         // 设置目标View,播放动画
         animatorSet.cancel()

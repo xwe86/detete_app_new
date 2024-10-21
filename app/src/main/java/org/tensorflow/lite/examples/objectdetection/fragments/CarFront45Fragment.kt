@@ -30,10 +30,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.android.example.cameraxbasic.utils.ANIMATION_FAST_MILLIS
 import com.android.example.cameraxbasic.utils.ANIMATION_SLOW_MILLIS
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
 import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCameraBinding
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCarFront45Binding
+import org.tensorflow.lite.examples.objectdetection.util.FileUploader
+import org.tensorflow.lite.examples.objectdetection.util.GlobalRandomIdManager
 import org.tensorflow.lite.task.vision.detector.Detection
 import java.io.File
 import java.io.FileOutputStream
@@ -348,6 +353,26 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         originalBitmap.recycle()
                         croppedBitmap.recycle()
 
+                        // 获取全局随机 ID
+                        val globalRandomId: String = GlobalRandomIdManager.getGlobalRandomId();
+                        Log.d("camera", "Global Random ID: $globalRandomId")
+
+
+
+                        val fileUploader = FileUploader()
+                        fileUploader.uploadFile(croppedPhotoFile, "1", "",object : Callback {
+                            override fun onFailure(call: Call, e: IOException) {
+                                Log.e("45", "Upload failed: ${e.message}")
+                            }
+
+                            override fun onResponse(call: Call, response: Response) {
+                                if (response.isSuccessful) {
+                                    Log.d("45", "Upload successful: ${response.body?.string()}")
+                                } else {
+                                    Log.e("45", "Upload failed: ${response.code}")
+                                }
+                            }
+                        })
 
                         // Implicit broadcasts will be ignored for devices running API level >= 24
                         // so if you only target API level 24+ you can remove this statement
