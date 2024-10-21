@@ -25,7 +25,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.drawable.ColorDrawable
 import android.hardware.display.DisplayManager
 import android.os.Build
@@ -140,28 +139,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     .commit()
         }
 
-
-
-//        playRight()
-        // 显示"请靠近"文案
-        handler.postDelayed({
-            // 在这里更新UI显示"请靠近"文案
-            showTipsText("请靠近")
-        }, tipColseTime)
-
-        // 显示"向左移动相机"文案
-        handler.postDelayed({
-            playLeft()
-            // 在这里更新UI显示"向左移动相机"文案
-            showTipsText("向左移动相机")
-        }, tipColseTime + tipLeftTime)
-
-        // 显示"识别成功"文案
-        handler.postDelayed({
-            playLeftStop()
-            // 在这里更新UI显示"识别成功"文案
-            showTipsText("识别成功")
-        }, tipColseTime + tipLeftTime + tipOKTime)
         return fragmentCameraBinding.root
     }
 
@@ -464,6 +441,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     imageHeight,
                     imageWidth
                 )
+
+                Log.i("相机"," imageWith：$imageWidth, imageHeight $imageHeight")
 
                 // Force a redraw
                 fragmentCameraBinding.overlay.invalidate()
