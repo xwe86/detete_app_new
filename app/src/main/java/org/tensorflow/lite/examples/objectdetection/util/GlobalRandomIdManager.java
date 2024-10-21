@@ -1,5 +1,7 @@
 package org.tensorflow.lite.examples.objectdetection.util;
 
+import static kotlin.random.RandomKt.Random;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -20,7 +22,8 @@ public class GlobalRandomIdManager {
 
         if (globalId == null) {
             // 如果没有，生成一个新的 UUID 并保存
-            globalId = UUID.randomUUID().toString();
+            Long currentTimeMillis = System.currentTimeMillis();// 将时间戳放大 1000 倍并加上随机数
+            globalId = currentTimeMillis.toString();
         }
 
         return globalId;

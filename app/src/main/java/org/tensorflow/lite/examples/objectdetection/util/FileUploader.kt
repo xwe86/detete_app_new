@@ -28,7 +28,7 @@ class FileUploader {
 
         // 创建 Request 对象
         val request = Request.Builder()
-            .url("http://vpn.hisprintgo.com")
+            .url("http://vpn.hisprintgo.com:18080/jeecg-boot/car/file/upload")
             .post(requestBody)
             .build()
 
