@@ -229,7 +229,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         preview =
             Preview.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(Surface.ROTATION_0)
+                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .build()
 
 
@@ -245,7 +245,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .setTargetAspectRatio(AspectRatio.RATIO_4_3)
             // Set initial target rotation, we will have to call this again if rotation changes
             // during the lifecycle of this use case
-            .setTargetRotation(Surface.ROTATION_0)
+            .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
             .build()
 
 
@@ -253,7 +253,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         imageAnalyzer =
             ImageAnalysis.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(Surface.ROTATION_0)
+                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
