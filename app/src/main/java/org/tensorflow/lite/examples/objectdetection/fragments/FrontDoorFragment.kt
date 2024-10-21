@@ -357,7 +357,7 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
                         // 保存裁剪后的图片到新的文件
                         val croppedPhotoFile: File =
-                            File("/storage/emulated/0//Pictures/test/12.jpg")
+                            File("/storage/emulated/0//Pictures/test/3.jpg")
                         try {
                             FileOutputStream(croppedPhotoFile).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
@@ -377,7 +377,7 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
                         val fileUploader = FileUploader()
-                        fileUploader.uploadFile(croppedPhotoFile, "12", "",object : Callback {
+                        fileUploader.uploadFile(croppedPhotoFile, "3", "前门",object : Callback {
                             override fun onFailure(call: Call, e: IOException) {
                                 Log.e("45", "Upload failed: ${e.message}")
                             }
