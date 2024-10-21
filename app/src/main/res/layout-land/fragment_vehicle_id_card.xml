@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout  xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/camera_container"
+    android:id="@+id/vehicle_id_card_container"
     android:layoutDirection="ltr"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -67,10 +68,12 @@
         app:layout_constraintStart_toStartOf="parent" />
 
 
-    <org.tensorflow.lite.examples.objectdetection.OverlayView
-        android:id="@+id/overlay"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+    <org.tensorflow.lite.examples.objectdetection.OverlayVehicleIdCardView
+        android:id="@+id/overlay_vehicle_id_card"
+        android:layout_width="609dp"
+        android:layout_height="346dp"
+        app:layout_anchor="@+id/car_bg"
+        app:layout_anchorGravity="center" />
 
     <ImageView
         android:id="@+id/arrow_left"
@@ -109,13 +112,11 @@
         tools:layout_editor_absoluteX="29dp"
         tools:layout_editor_absoluteY="94dp" />
 
-<!--    <ImageView-->
-<!--        android:id="@+id/car_bg"-->
-<!--        android:layout_width="700dp"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:rotation="0"-->
-<!--        android:src="@drawable/bg" />-->
-
-
+    <ImageView
+        android:id="@+id/car_bg"
+        android:layout_width="700dp"
+        android:layout_height="wrap_content"
+        android:rotation="0"
+        android:src="@drawable/camera_idcard_front" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
