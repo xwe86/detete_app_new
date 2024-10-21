@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         }
         //车架
         activityMainBinding.vinIdButton?.setOnClickListener {
-            switchFragment(VINFragment())
+            switchFragment(VINCFragment())
         }
         // 身份证
         activityMainBinding.idCardButton?.setOnClickListener {
