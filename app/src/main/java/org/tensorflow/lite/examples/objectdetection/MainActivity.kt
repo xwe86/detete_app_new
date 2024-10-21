@@ -28,6 +28,7 @@ import org.tensorflow.lite.examples.objectdetection.fragments.CarFront45Fragment
 import org.tensorflow.lite.examples.objectdetection.fragments.DefualtFragment
 import org.tensorflow.lite.examples.objectdetection.fragments.DriverIdCardFragment
 import org.tensorflow.lite.examples.objectdetection.fragments.IDCamraFragment
+import org.tensorflow.lite.examples.objectdetection.fragments.VINCFragment
 import org.tensorflow.lite.examples.objectdetection.fragments.VINFragment
 import org.tensorflow.lite.examples.objectdetection.fragments.VehicleDamageFragment
 import org.tensorflow.lite.examples.objectdetection.fragments.VehicleIdCardFragment
