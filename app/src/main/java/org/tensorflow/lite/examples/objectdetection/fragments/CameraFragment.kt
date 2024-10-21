@@ -24,8 +24,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.drawable.ColorDrawable
 import android.hardware.display.DisplayManager
 import android.os.Build
@@ -42,13 +42,15 @@ import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.navigation.Navigation
 import com.android.example.cameraxbasic.utils.ANIMATION_FAST_MILLIS
 import com.android.example.cameraxbasic.utils.ANIMATION_SLOW_MILLIS
 import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCameraBinding
 import org.tensorflow.lite.task.vision.detector.Detection
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
@@ -56,6 +58,7 @@ import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+
 
 class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
@@ -253,8 +256,12 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
         // ImageCapture
+        // 设置目标分辨率
+        // 例如，设置分辨率为 1280x720
+
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+//            .setTargetResolution(targetResolution)
             // We request aspect ratio but no resolution to match preview config, but letting
             // CameraX optimize for whatever specific resolution best fits our use cases
             .setTargetAspectRatio(AspectRatio.RATIO_4_3)
@@ -352,6 +359,32 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                         val savedUri = output.savedUri
                         Log.d(TAG, "Photo capture succeeded: $savedUri")
+                        val originalBitmap = BitmapFactory.decodeFile( "/storage/emulated/0//Pictures/test/"+name+".jpg" )
+                        val x = 0 // 裁剪区域的左上角x坐标
+                        val y = 0 // 裁剪区域的左上角y坐标
+                        val width = originalBitmap.width*0.8 // 裁剪区域的宽度
+                        val height = originalBitmap.height*0.7 // 裁剪区域的高度
+
+
+                        // 裁剪原始图片
+                        val croppedBitmap = Bitmap.createBitmap(originalBitmap, x, y, width.toInt(), height.toInt())
+
+
+                        // 保存裁剪后的图片到新的文件
+                        val croppedPhotoFile: File =
+                            File("/storage/emulated/0//Pictures/test/1.jpg")
+                        try {
+                            FileOutputStream(croppedPhotoFile).use { out ->
+                                croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                            }
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                        }
+
+
+                        // 清理资源
+                        originalBitmap.recycle()
+                        croppedBitmap.recycle()
 
 
                         // Implicit broadcasts will be ignored for devices running API level >= 24
