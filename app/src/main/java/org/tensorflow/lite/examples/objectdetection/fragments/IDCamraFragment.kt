@@ -346,7 +346,7 @@ class IDCamraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
                         // 保存裁剪后的图片到新的文件
                         val croppedPhotoFile: File =
-                            File("/storage/emulated/0//Pictures/test/1.jpg")
+                            File("/storage/emulated/0//Pictures/test/13.jpg")
                         try {
                             FileOutputStream(croppedPhotoFile).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
