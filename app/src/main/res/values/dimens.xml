@@ -46,7 +46,7 @@
     <dimen name="stroke_large">12dp</dimen>
 
     <dimen name="round_button_small">32dp</dimen>
-    <dimen name="round_button_large">92dp</dimen>
+    <dimen name="round_button_large">60dp</dimen>
 
     <dimen name="rect_button_margin">12dp</dimen>
     <dimen name="rect_button_width">80dp</dimen>

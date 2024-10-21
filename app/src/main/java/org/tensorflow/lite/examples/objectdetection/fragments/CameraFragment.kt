@@ -597,6 +597,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         handler.removeCallbacksAndMessages(null)
         // 设置目标View,播放动画
         animatorSet.cancel()
+        imageAnalyzer?.clearAnalyzer()
     }
 
     override fun onError(error: String) {

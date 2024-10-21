@@ -16,6 +16,7 @@
 
 package org.tensorflow.lite.examples.objectdetection
 
+import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -48,6 +49,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityMainBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(activityMainBinding.root)
+
+        //ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE，来将 Activity 的旋转方向设置为横屏模式
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
         // 初始显示的 Fragment
         currentFragment = DefualtFragment()

@@ -420,26 +420,17 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     }
 
     private fun showOrNoShowView() {
-        //竖屏0， 左 1， 右3
-        if (fragmentCameraBinding.viewFinder.display.rotation == 1) {
-            // 横屏时的图
-            fragmentCameraBinding.carBg.visibility = View.VISIBLE
-            fragmentCameraBinding.carBg.rotation = 0f
-        } else {
-            // Make sure all UI elements are visible
-            fragmentCameraBinding.carBg.visibility = View.INVISIBLE
-            fragmentCameraBinding.carBg.rotation = 90f
-            fragmentCameraBinding.detectTip.text = "请旋转屏幕"
-        }
-    }
-
-
-    // 停止图像分析
-    private fun stopImageAnalyzer() {
-        if (imageAnalyzer != null) {
-            imageAnalyzer?.clearAnalyzer()
-            imageAnalyzer = null
-        }
+//        //竖屏0， 左 1， 右3
+//        if (fragmentCameraBinding.viewFinder.display.rotation == 1) {
+//            // 横屏时的图
+//            fragmentCameraBinding.carBg.visibility = View.VISIBLE
+//            fragmentCameraBinding.carBg.rotation = 0f
+//        } else {
+//            // Make sure all UI elements are visible
+//            fragmentCameraBinding.carBg.visibility = View.INVISIBLE
+//            fragmentCameraBinding.carBg.rotation = 90f
+//            fragmentCameraBinding.detectTip.text = "请旋转屏幕"
+//        }
     }
 
 
@@ -458,39 +449,34 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 fragmentCameraBinding.inferenceTimeVal.text =
                     String.format("%d ms", inferenceTime)
 
-                //处理识别结果
-                val currentTime = System.currentTimeMillis()
-                // 每秒更新一次提示
-                if (currentTime - lastRecordTime >= recognitionInterval) {
-                    results?.let { recognitionResults?.addAll(it) }
+                val empty = results?.isEmpty()
+                if (!empty!!){
+                    //处理识别结果
+                    val currentTime = System.currentTimeMillis()
+                    // 每秒更新一次提示
+                    if (currentTime - lastRecordTime >= recognitionInterval) {
+                        results?.let { recognitionResults?.addAll(it) }
 // 处理图像增加提示信息
-                    recordAnalysisResult(
-                        results,
-                        "" + lastRecordTime
+                        recordAnalysisResult(results)
+                        lastRecordTime = currentTime
+                    }
+
+                    // Pass necessary information to OverlayView for drawing on the canvas
+                    fragmentCameraBinding.overlay.setResults(
+                        results ?: LinkedList<Detection>(),
+                        imageHeight,
+                        imageWidth
                     )
-                    lastRecordTime = currentTime
+                    val viewWidth = fragmentCameraBinding.overlay.width
+                    val viewHeight = fragmentCameraBinding.overlay.height
+
+                    val scaleFactor = max(viewWidth * 1f / imageWidth, viewHeight * 1f / imageHeight)
+                    Log.i(
+                        "overLayView",
+                        " scaleFactor $scaleFactor , width：$viewWidth, height:$viewHeight, imageWith：$imageWidth, imageHeight $imageHeight"
+                    )
+
                 }
-
-                // Pass necessary information to OverlayView for drawing on the canvas
-                fragmentCameraBinding.overlay.setResults(
-                    results ?: LinkedList<Detection>(),
-                    imageHeight,
-                    imageWidth
-                )
-                val viewWidth = fragmentCameraBinding.overlay.width
-                val viewHeight = fragmentCameraBinding.overlay.height
-
-                val scaleFactor = max(viewWidth * 1f / imageWidth, viewHeight * 1f / imageHeight)
-                Log.i(
-                    "overLayView",
-                    " scaleFactor $scaleFactor , width：$viewWidth, height:$viewHeight, imageWith：$imageWidth, imageHeight $imageHeight"
-                )
-
-
-
-
-
-
 
 
                 Log.i("相机", " imageWith：$imageWidth, imageHeight $imageHeight")
@@ -509,10 +495,8 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             handler.postDelayed(this, 1000)
         }
     }
-    private fun recordAnalysisResult(
-        results: List<Detection>?,
-        recordAnalysisResult: String
-    ) {
+
+    private fun recordAnalysisResult(results: List<Detection>?) {
         // 处理图像并记录结果的逻辑
         // 创建一个 Set 集合，用于存放 List 中的数据
         val dataSet = HashSet<String>()
@@ -536,16 +520,16 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
 
-        if (dataSet.isEmpty() || !dataSet.contains("frontCover")) {
+        if (dataSet.isEmpty()) {
             tipText = "未识别到任何数据，请靠近车辆"
             showTipsText(tipText)
             return
-        } else if(  !dataSet.contains("frontCover")) {
+        } else if (!dataSet.contains("frontCover")) {
             tipText = "未识别到车门，请靠近前车门"
             showTipsText(tipText)
             return
         } else if (dataSet.contains("frontCover")) {
-            val matchFound = dataSet.any { it.startsWith("back")&& it !="backDoor" }
+            val matchFound = dataSet.any { it.startsWith("back") && it != "backDoor" }
             if (matchFound) {
                 tipText = "识别到后车组件，请向左移动"
                 showTipsText(tipText)
@@ -595,7 +579,6 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
 
 
-
     }
 
 
@@ -609,54 +592,6 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     fun showTipsText(text: String) {
         fragmentCameraBinding.detectTip.text = text
     }
-
-
-//    private fun recordAnalysisResult(
-//        results: MutableList<Detection>?,
-//        recordAnalysisResult: String
-//    ) {
-//        // 处理图像并记录结果的逻辑
-//        Log.d("", "记录时间戳 $recordAnalysisResult")
-//        // 创建一个 Set 集合，用于存放 List 中的数据
-//        val dataSet = HashSet<String>()
-//        var drawableText = ""
-//        for (result in results ?: LinkedList<Detection>()) {
-//            val boundingBox = result.boundingBox
-//            var scaleFactor: Float = 1f
-//            val top = boundingBox.top * scaleFactor
-//            val bottom = boundingBox.bottom * scaleFactor
-//            val left = boundingBox.left * scaleFactor
-//            val right = boundingBox.right * scaleFactor
-//
-//            drawableText =
-//                result.categories[0].label + " " + String.format(
-//                    "%.2f",
-//                    result.categories[0].score
-//                ) +
-//                        "top :$top bottom: $bottom left: $left right: $right"
-//            dataSet.add(result.categories[0].label)
-//        }
-//
-//
-//        if (dataSet.size >= 4 && dataSet.containsAll(
-//                setOf(
-//                    "frontCover",
-//                    "frontdDoor",
-//                    "frontFender",
-//                    "frontBumper"
-//                )
-//            )
-//        ) {
-//            Log.i(tag, "45°识别成功开始录图像")
-//            fragmentCameraBinding.detectTip.text = "识别成功=========="
-//        }
-//
-//
-//        fragmentCameraBinding.detectData.text = dataSet.joinToString(separator = ", ")
-//
-//
-//    }
-
 
     /**
      * We need a display listener for orientation changes that do not trigger a configuration
