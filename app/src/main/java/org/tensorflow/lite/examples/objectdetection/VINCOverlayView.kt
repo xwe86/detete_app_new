@@ -104,7 +104,7 @@ class VINCOverlayView(context: Context?, attrs: AttributeSet?) : View(context, a
                     "绘图层",
                     "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
                 )
-                if (boundingBox.bottom - boundingBox.top < 80L) {
+                if (boundingBox.bottom - boundingBox.top < 50L) {
                     tipText = "请稍微靠近";
                     Log.d("绘图层", "原始数据位置提示 请靠近")
                     identifyFlag = false
