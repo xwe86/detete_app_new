@@ -18,10 +18,21 @@ package org.tensorflow.lite.examples.objectdetection
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import org.tensorflow.lite.examples.objectdetection.databinding.ActivityMainBinding
-import org.tensorflow.lite.examples.objectdetection.fragments.*
+import org.tensorflow.lite.examples.objectdetection.fragments.CameraFragment
+import org.tensorflow.lite.examples.objectdetection.fragments.CarBack45Fragment
+import org.tensorflow.lite.examples.objectdetection.fragments.CarFront45Fragment
+import org.tensorflow.lite.examples.objectdetection.fragments.DefualtFragment
+import org.tensorflow.lite.examples.objectdetection.fragments.DriverIdCardFragment
+import org.tensorflow.lite.examples.objectdetection.fragments.IDCamraFragment
+import org.tensorflow.lite.examples.objectdetection.fragments.VINFragment
+import org.tensorflow.lite.examples.objectdetection.fragments.VehicleDamageFragment
+import org.tensorflow.lite.examples.objectdetection.fragments.VehicleIdCardFragment
+import org.tensorflow.lite.examples.objectdetection.util.GlobalRandomIdManager
+
 
 /**
  * Main entry point into our app. This app follows the single-activity pattern, and all
@@ -76,7 +87,6 @@ class MainActivity : AppCompatActivity() {
         activityMainBinding.carDamageButton?.setOnClickListener {
             switchFragment(VehicleDamageFragment())
         }
-
 
 
 
