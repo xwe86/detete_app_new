@@ -69,10 +69,8 @@
 
     <org.tensorflow.lite.examples.objectdetection.OverlayView
         android:id="@+id/overlay"
-        android:layout_width="609dp"
-        android:layout_height="346dp"
-        app:layout_anchor="@+id/car_bg"
-        app:layout_anchorGravity="center" />
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
     <ImageView
         android:id="@+id/arrow_left"
@@ -111,12 +109,12 @@
         tools:layout_editor_absoluteX="29dp"
         tools:layout_editor_absoluteY="94dp" />
 
-    <ImageView
-        android:id="@+id/car_bg"
-        android:layout_width="700dp"
-        android:layout_height="wrap_content"
-        android:rotation="0"
-        android:src="@drawable/bg" />
+<!--    <ImageView-->
+<!--        android:id="@+id/car_bg"-->
+<!--        android:layout_width="700dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:rotation="0"-->
+<!--        android:src="@drawable/bg" />-->
 
 
 

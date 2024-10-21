@@ -83,7 +83,9 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     //识别统计结果的间隔， 1s内目标数据出现了，就算识别成功
     private val recognitionInterval = 1000L
 
-
+    private val displayManager by lazy {
+        requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+    }
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -111,6 +113,8 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     ): View {
         _fragmentCameraBinding = FragmentCarFront45Binding.inflate(inflater, container, false)
         windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        displayManager.registerDisplayListener(displayListener, null)
+
 
         val permissionFragment = PermissionsFragment()
         if (!PermissionsFragment.hasPermissions(requireContext())) {
@@ -166,6 +170,7 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             setUpCamera()
         }
 
+        showOrNoShowView()
     }
 
 
@@ -319,7 +324,7 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         val x = 0 // 裁剪区域的左上角x坐标
                         val y = 0 // 裁剪区域的左上角y坐标
                         val width = originalBitmap.width // 裁剪区域的宽度
-                        val height = originalBitmap.height*0.45 // 裁剪区域的高度
+                        val height = originalBitmap.height*0.6 // 裁剪区域的高度
 
 
                         // 裁剪原始图片
@@ -328,7 +333,7 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
                         // 保存裁剪后的图片到新的文件
                         val croppedPhotoFile: File =
-                            File("/storage/emulated/0//Pictures/test/2.jpg")
+                            File("/storage/emulated/0//Pictures/test/"+name+"_2+.jpg")
                         try {
                             FileOutputStream(croppedPhotoFile).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
@@ -399,6 +404,9 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     }
 
 
+    /**
+     * 处理手机旋转时 视图的变更
+     */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         Log.d(
@@ -406,7 +414,23 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             "相机位置变更 ${fragmentCameraBinding.viewFinder.display.rotation}   ==>  $newConfig "
         )
         imageAnalyzer?.targetRotation = fragmentCameraBinding.viewFinder.display.rotation
+
+        showOrNoShowView()
     }
+
+    private fun showOrNoShowView(){
+        //竖屏0， 左 1， 右3
+        if (fragmentCameraBinding.viewFinder.display.rotation == 1){
+            // 横屏时的图
+            fragmentCameraBinding.carBg.visibility = View.VISIBLE
+            fragmentCameraBinding.carBg.rotation = 0f
+        }else{
+            // Make sure all UI elements are visible
+            fragmentCameraBinding.carBg.rotation = 90f
+        }
+    }
+
+
 
 
     // 停止图像分析
@@ -556,7 +580,7 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             shutdown()
             awaitTermination(500, TimeUnit.MILLISECONDS)
         }
-
+        displayManager.unregisterDisplayListener(displayListener)
 
     }
 

@@ -156,12 +156,6 @@
     </RelativeLayout>
 
 
-<!--    <ImageView-->
-<!--        android:id="@+id/car_bg"-->
-<!--        android:layout_width="640dp"-->
-<!--        android:layout_height="match_parent"-->
-<!--        android:layout_marginLeft="-90dp"-->
-<!--        android:src="@drawable/bg" />-->
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
