@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.hardware.Camera
@@ -75,20 +76,18 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private lateinit var cameraExecutor: ExecutorService
 
 
-    private var lastRecordTime = 0L // 上次记录的时间戳
-
     //识别结果暂存列表
     val recognitionResults: MutableList<Detection>? = mutableListOf()
+    private var lastRecordTime = 0L // 上次记录的时间戳
 
     //识别统计结果的间隔， 1s内目标数据出现了，就算识别成功
-    private val recognitionInterval = 1000L
+    private val recognitionInterval = 100L
 
     private val displayManager by lazy {
         requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     }
 
     private val handler = Handler(Looper.getMainLooper())
-
 
 
     //从 Paused 状态恢复到 Resumed 状态时，系统会调用 onResume() 方法。
@@ -320,20 +319,22 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                         val savedUri = output.savedUri
                         Log.d(TAG, "Photo capture succeeded: $savedUri")
-                        val originalBitmap = BitmapFactory.decodeFile( "/storage/emulated/0//Pictures/test/"+name+".jpg" )
+                        val originalBitmap =
+                            BitmapFactory.decodeFile("/storage/emulated/0//Pictures/test/" + name + ".jpg")
                         val x = 0 // 裁剪区域的左上角x坐标
                         val y = 0 // 裁剪区域的左上角y坐标
                         val width = originalBitmap.width // 裁剪区域的宽度
-                        val height = originalBitmap.height*0.6 // 裁剪区域的高度
+                        val height = originalBitmap.height * 0.6 // 裁剪区域的高度
 
 
                         // 裁剪原始图片
-                        val croppedBitmap = Bitmap.createBitmap(originalBitmap, x, y, width.toInt(), height.toInt())
+                        val croppedBitmap =
+                            Bitmap.createBitmap(originalBitmap, x, y, width.toInt(), height.toInt())
 
 
                         // 保存裁剪后的图片到新的文件
                         val croppedPhotoFile: File =
-                            File("/storage/emulated/0//Pictures/test/"+name+"_2+.jpg")
+                            File("/storage/emulated/0//Pictures/test/" + name + "_2+.jpg")
                         try {
                             FileOutputStream(croppedPhotoFile).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
@@ -418,19 +419,19 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         showOrNoShowView()
     }
 
-    private fun showOrNoShowView(){
+    private fun showOrNoShowView() {
         //竖屏0， 左 1， 右3
-        if (fragmentCameraBinding.viewFinder.display.rotation == 1){
+        if (fragmentCameraBinding.viewFinder.display.rotation == 1) {
             // 横屏时的图
             fragmentCameraBinding.carBg.visibility = View.VISIBLE
             fragmentCameraBinding.carBg.rotation = 0f
-        }else{
+        } else {
             // Make sure all UI elements are visible
+            fragmentCameraBinding.carBg.visibility = View.INVISIBLE
             fragmentCameraBinding.carBg.rotation = 90f
+            fragmentCameraBinding.detectTip.text = "请旋转屏幕"
         }
     }
-
-
 
 
     // 停止图像分析
@@ -453,9 +454,6 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         imageWidth: Int
     ) {
         activity?.runOnUiThread {
-//            fragmentCameraBinding.bottomSheetLayout.inferenceTimeVal.text =
-//                            String.format("%d ms", inferenceTime)
-
             try {
                 fragmentCameraBinding.inferenceTimeVal.text =
                     String.format("%d ms", inferenceTime)
@@ -465,9 +463,11 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 // 每秒更新一次提示
                 if (currentTime - lastRecordTime >= recognitionInterval) {
                     results?.let { recognitionResults?.addAll(it) }
-                    // 处理图像并记录结果
-                    recordAnalysisResult(results, "" + lastRecordTime)
-
+// 处理图像增加提示信息
+                    recordAnalysisResult(
+                        results,
+                        "" + lastRecordTime
+                    )
                     lastRecordTime = currentTime
                 }
 
@@ -477,8 +477,23 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     imageHeight,
                     imageWidth
                 )
+                val viewWidth = fragmentCameraBinding.overlay.width
+                val viewHeight = fragmentCameraBinding.overlay.height
 
-                Log.i("相机"," imageWith：$imageWidth, imageHeight $imageHeight")
+                val scaleFactor = max(viewWidth * 1f / imageWidth, viewHeight * 1f / imageHeight)
+                Log.i(
+                    "overLayView",
+                    " scaleFactor $scaleFactor , width：$viewWidth, height:$viewHeight, imageWith：$imageWidth, imageHeight $imageHeight"
+                )
+
+
+
+
+
+
+
+
+                Log.i("相机", " imageWith：$imageWidth, imageHeight $imageHeight")
 
                 // Force a redraw
                 fragmentCameraBinding.overlay.invalidate()
@@ -494,7 +509,99 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             handler.postDelayed(this, 1000)
         }
     }
+    private fun recordAnalysisResult(
+        results: List<Detection>?,
+        recordAnalysisResult: String
+    ) {
+        // 处理图像并记录结果的逻辑
+        // 创建一个 Set 集合，用于存放 List 中的数据
+        val dataSet = HashSet<String>()
+        var tipText = ""
 
+
+        //查看整个识别数据的边界
+        var targetTop = 200f
+        var targetBottom = 0f
+        var targetLeft = 400f
+        var targetRight = 0f
+
+        for (result in results ?: LinkedList<Detection>()) {
+            dataSet.add(result.categories[0].label)
+            targetTop = minOf(targetTop, result.boundingBox.top)
+            targetBottom = maxOf(targetBottom, result.boundingBox.bottom)
+            targetLeft = minOf(targetLeft, result.boundingBox.left)
+            targetRight = maxOf(targetRight, result.boundingBox.right)
+        }
+
+
+
+
+        if (dataSet.isEmpty() || !dataSet.contains("frontCover")) {
+            tipText = "未识别到任何数据，请靠近车辆"
+            showTipsText(tipText)
+            return
+        } else if(  !dataSet.contains("frontCover")) {
+            tipText = "未识别到车门，请靠近前车门"
+            showTipsText(tipText)
+            return
+        } else if (dataSet.contains("frontCover")) {
+            val matchFound = dataSet.any { it.startsWith("back")&& it !="backDoor" }
+            if (matchFound) {
+                tipText = "识别到后车组件，请向左移动"
+                showTipsText(tipText)
+                return
+            }
+
+            //前机盖 前叶子板 前门  前保险杆
+            if (dataSet.size >= 4 && dataSet.containsAll(
+                    setOf(
+                        "frontCover",
+                        "frontdDoor",
+                        "frontFender",
+                        "frontBumper"
+                    )
+                )
+            ) {
+                Log.i("车45度", "45°识别成功开始保存图像")
+                tipText = "45°识别成功";
+                showTipsText(tipText)
+                return
+            }
+            if (targetBottom - targetTop < 90L) {
+                tipText = "请靠近";
+                showTipsText(tipText)
+                Log.d("绘图层", "原始数据位置提示 请靠近")
+                return
+            }
+            if (targetBottom - targetTop > 225L) {
+                tipText = "请稍微离远";
+                showTipsText(tipText)
+                Log.d("绘图层", "原始数据位置提示 请稍微离远")
+                return
+            }
+            if (targetLeft < 10L) {
+                tipText = "请稍微请向左";
+                showTipsText(tipText)
+                Log.d("绘图层", "原始数据位置提示 请稍微请向左")
+                return
+            }
+            if (targetRight > 580L) {
+                tipText = "请稍微请向右";
+                showTipsText(tipText)
+                Log.d("绘图层", "原始数据位置提示 请稍微请向右")
+                return
+            }
+
+        }
+
+
+
+    }
+
+
+    private fun checkIsTarget(result: Detection): Boolean {
+        return "frontdDoor" == result.categories[0].label
+    }
 
     /**
      * 设置提示文案
@@ -504,43 +611,51 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     }
 
 
-    private fun recordAnalysisResult(
-        results: MutableList<Detection>?,
-        recordAnalysisResult: String
-    ) {
-        // 处理图像并记录结果的逻辑
-        Log.d("", "记录时间戳 $recordAnalysisResult")
-        // 创建一个 Set 集合，用于存放 List 中的数据
-        val dataSet = HashSet<String>()
-        for (result in results ?: LinkedList<Detection>()) {
-            val boundingBox = result.boundingBox
-            var scaleFactor: Float = 1f
-            val top = boundingBox.top * scaleFactor
-            val bottom = boundingBox.bottom * scaleFactor
-            val left = boundingBox.left * scaleFactor
-            val right = boundingBox.right * scaleFactor
-
+//    private fun recordAnalysisResult(
+//        results: MutableList<Detection>?,
+//        recordAnalysisResult: String
+//    ) {
+//        // 处理图像并记录结果的逻辑
+//        Log.d("", "记录时间戳 $recordAnalysisResult")
+//        // 创建一个 Set 集合，用于存放 List 中的数据
+//        val dataSet = HashSet<String>()
+//        var drawableText = ""
+//        for (result in results ?: LinkedList<Detection>()) {
+//            val boundingBox = result.boundingBox
+//            var scaleFactor: Float = 1f
+//            val top = boundingBox.top * scaleFactor
+//            val bottom = boundingBox.bottom * scaleFactor
+//            val left = boundingBox.left * scaleFactor
+//            val right = boundingBox.right * scaleFactor
+//
 //            drawableText =
 //                result.categories[0].label + " " + String.format(
 //                    "%.2f",
 //                    result.categories[0].score
 //                ) +
 //                        "top :$top bottom: $bottom left: $left right: $right"
-            dataSet.add(result.categories[0].label)
-        }
-        if (dataSet.size>5){
-//            Toast.makeText(context, "45°识别成功开始录图像", Toast.LENGTH_SHORT).show()
-            Log.i(tag,"45°识别成功开始录图像")
-//            saveImage()
-            // 在Activity或Fragment中调用以下代码来显示Toast消息
-//            Toast.makeText(context, "45°成功保存图像", Toast.LENGTH_SHORT).show()
-        }
-
-
-        fragmentCameraBinding.detectData.text = dataSet.joinToString(separator = ", ")
-
-
-    }
+//            dataSet.add(result.categories[0].label)
+//        }
+//
+//
+//        if (dataSet.size >= 4 && dataSet.containsAll(
+//                setOf(
+//                    "frontCover",
+//                    "frontdDoor",
+//                    "frontFender",
+//                    "frontBumper"
+//                )
+//            )
+//        ) {
+//            Log.i(tag, "45°识别成功开始录图像")
+//            fragmentCameraBinding.detectTip.text = "识别成功=========="
+//        }
+//
+//
+//        fragmentCameraBinding.detectData.text = dataSet.joinToString(separator = ", ")
+//
+//
+//    }
 
 
     /**
