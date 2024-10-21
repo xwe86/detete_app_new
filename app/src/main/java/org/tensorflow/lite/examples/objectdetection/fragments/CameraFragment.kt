@@ -147,28 +147,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     .commit()
         }
 
-
-
-//        playRight()
-        // 显示"请靠近"文案
-        handler.postDelayed({
-            // 在这里更新UI显示"请靠近"文案
-            showTipsText("请靠近")
-        }, tipColseTime)
-
-        // 显示"向左移动相机"文案
-        handler.postDelayed({
-            playLeft()
-            // 在这里更新UI显示"向左移动相机"文案
-            showTipsText("向左移动相机")
-        }, tipColseTime + tipLeftTime)
-
-        // 显示"识别成功"文案
-        handler.postDelayed({
-            playLeftStop()
-            // 在这里更新UI显示"识别成功"文案
-            showTipsText("识别成功")
-        }, tipColseTime + tipLeftTime + tipOKTime)
         return fragmentCameraBinding.root
     }
 
@@ -255,7 +233,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         preview =
             Preview.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(Surface.ROTATION_0)
+                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .build()
 
 
@@ -271,7 +249,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             .setTargetAspectRatio(AspectRatio.RATIO_4_3)
             // Set initial target rotation, we will have to call this again if rotation changes
             // during the lifecycle of this use case
-            .setTargetRotation(Surface.ROTATION_0)
+            .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
             .build()
 
 
@@ -279,7 +257,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         imageAnalyzer =
             ImageAnalysis.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(Surface.ROTATION_0)
+                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
@@ -521,6 +499,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     imageHeight,
                     imageWidth
                 )
+
+                Log.i("相机"," imageWith：$imageWidth, imageHeight $imageHeight")
 
                 // Force a redraw
                 fragmentCameraBinding.overlay.invalidate()

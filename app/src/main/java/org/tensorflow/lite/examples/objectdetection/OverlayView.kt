@@ -34,15 +34,17 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     private var results: List<Detection> = LinkedList<Detection>()
     private var boxPaint = Paint()
+    private var tipBoxPaint = Paint()
     private var textBackgroundPaint = Paint()
     private var textPaint = Paint()
-
+    private var textTipPaint = Paint()
     private var scaleFactor: Float = 1f
 
     private var bounds = Rect()
 
     // 声明全局变量保存识别结果
     var recognitionResult = ""
+
     init {
         initPaints()
     }
@@ -51,6 +53,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         textPaint.reset()
         textBackgroundPaint.reset()
         boxPaint.reset()
+        tipBoxPaint.reset()
+        textTipPaint.reset()
         invalidate()
         initPaints()
     }
@@ -59,19 +63,31 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         textBackgroundPaint.color = Color.BLACK
         textBackgroundPaint.style = Paint.Style.FILL
         textBackgroundPaint.textSize = 50f
-        textBackgroundPaint.alpha=128
+        textBackgroundPaint.alpha = 128
 
         textPaint.color = Color.WHITE
         textPaint.style = Paint.Style.FILL
         textPaint.textSize = 50f
 
+        textTipPaint.color = Color.WHITE
+        textTipPaint.style = Paint.Style.FILL
+        textTipPaint.textSize = 80f
+
         boxPaint.color = ContextCompat.getColor(context!!, R.color.bounding_box_color)
         boxPaint.strokeWidth = 8F
         boxPaint.style = Paint.Style.STROKE
+
+        tipBoxPaint.color = ContextCompat.getColor(context!!, R.color.bounding_box_tip_color)
+        tipBoxPaint.strokeWidth = 8F
+        tipBoxPaint.style = Paint.Style.STROKE
+
+
     }
 
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
+
+        drawOneRect(90f, 210f, 100f, 500f, canvas)
 
         for (result in results) {
             val boundingBox = result.boundingBox
@@ -81,14 +97,41 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
             val left = boundingBox.left * scaleFactor
             val right = boundingBox.right * scaleFactor
 
+
+
+            if (checkIsTarget(result)) {
+                Log.d(
+                    "绘图层",
+                    "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
+                )
+                var tipText = "";
+                if (boundingBox.bottom - boundingBox.top < 70L) {
+                    tipText = "请靠近";
+                    Log.d("绘图层", "原始数据位置提示 请靠近")
+                }
+                if (boundingBox.bottom - boundingBox.top > 120L) {
+                    tipText = "请稍微离远";
+                    Log.d("绘图层", "原始数据位置提示 请稍微离远")
+                }
+                if (boundingBox.left < 70L) {
+                    tipText = "请稍微请向右";
+                    Log.d("绘图层", "原始数据位置提示 请稍微请向右")
+                }
+                if (boundingBox.right > 500L) {
+                    tipText = "请稍微请向左";
+                    Log.d("绘图层", "原始数据位置提示 请稍微请向左")
+                }
+                drawOneText(tipText, 300f, 260f ,canvas)
+
+            }
+
+
             // Draw bounding box around detected objects
             val drawableRect = RectF(left, top, right, bottom)
             canvas.drawRect(drawableRect, boxPaint)
 
             // Create text to display alongside detected objects
-            val drawableText =
-                result.categories[0].label + " " +
-                        String.format("%.2f", result.categories[0].score)
+            val drawableText = result.categories[0].label + " " + String.format("%.2f", result.categories[0].score)
 
             // Draw rect behind display text
             textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)
@@ -103,13 +146,19 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                 bottomPoint,
                 textBackgroundPaint
             )
-            Log.d("绘图层","位置数据 left:${left} top:${top} right: ${rightPoint}, bottome: ${bottomPoint} 识别到：${result.categories[0].label}")
-
+            if (checkIsTarget(result)) {
+                Log.d(
+                    "绘图层",
+                    "位置数据 left:${left} top:${top} right: ${rightPoint}, bottome: ${bottomPoint} 识别到：${result.categories[0].label}"
+                )
+            }
             // Draw text for detected object
             canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
         }
     }
-
+    fun checkIsTarget(result:Detection ): Boolean {
+        return "plate" == result.categories[0].label
+    }
     fun setResults(
       detectionResults: MutableList<Detection>,
       imageHeight: Int,
@@ -120,7 +169,40 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         // PreviewView is in FILL_START mode. So we need to scale up the bounding box to match with
         // the size that the captured images will be displayed.
         scaleFactor = max(width * 1f / imageWidth, height * 1f / imageHeight)
+        Log.i(
+            "overLayView",
+            " scaleFactor $scaleFactor , width：$width, height:$height, imageWith：$imageWidth, imageHeight $imageHeight"
+        )
     }
+
+    fun drawOneRect(
+        top: Float, bottom: Float, left: Float, right: Float,
+        canvas: Canvas
+    ) {
+
+        val top = top * scaleFactor
+        val bottom = bottom * scaleFactor
+        val left = left * scaleFactor
+        val right = right * scaleFactor
+
+        val drawableRect = RectF(left, top, right, bottom)
+        canvas.drawRect(drawableRect, tipBoxPaint)
+    }
+
+
+
+    fun drawOneText(tipText: String,
+        top: Float, bottom: Float,
+        canvas: Canvas
+    ) {
+
+        val top = top * scaleFactor
+        val bottom = bottom * scaleFactor
+
+        canvas.drawText(tipText, top, bottom ,textTipPaint )
+
+    }
+
 
     companion object {
         private const val BOUNDING_RECT_TEXT_PADDING = 8
