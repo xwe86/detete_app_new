@@ -87,7 +87,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-        drawOneRect(100f, 200f, 180f, 360f, canvas)
+        drawOneRect(110f, 210f, 180f, 420f, canvas)
 
 
         val dataSet = HashSet<String>()
@@ -147,11 +147,11 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                 Log.d("绘图层", "原始数据位置提示 请稍微离远")
             }
             if (plateBoundingBox.left < 130L) {
-                tipText = "请稍微请向右";
+                tipText = "请稍微请向左";
                 Log.d("绘图层", "原始数据位置提示 请稍微请向左")
             }
             if (plateBoundingBox.right > 450L) {
-                tipText = "请稍微请向左";
+                tipText = "请稍微请向右";
                 Log.d("绘图层", "原始数据位置提示 请稍微请向右")
             }
             drawOneText(tipText, 300f, 260f, canvas)
