@@ -13,25 +13,30 @@
         android:orientation="vertical">
 
         <Button
-            android:id="@+id/left_front_door_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:text="左前车门" />
-
-        <Button
             android:id="@+id/left_back_door_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/left_front_door_button"
+            android:layout_marginTop="20dp"
             android:layout_alignParentLeft="true"
             android:text="左后车门" />
+
+        <Button
+            android:id="@+id/left_front_door_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-5dp"
+            android:layout_below="@id/left_back_door_button"
+            android:layout_alignParentLeft="true"
+            android:text="左前车门" />
+
+
 
         <Button
             android:id="@+id/right_front_door_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/left_back_door_button"
+            android:layout_marginTop="-5dp"
+            android:layout_below="@id/left_front_door_button"
             android:layout_alignParentLeft="true"
             android:text="右前车门" />
 
@@ -39,6 +44,7 @@
             android:id="@+id/right_back_door_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="-5dp"
             android:layout_below="@id/right_front_door_button"
             android:layout_alignParentLeft="true"
             android:text="右后车门" />
@@ -46,6 +52,7 @@
         <Button
             android:id="@+id/front_baoxiao"
             android:layout_width="wrap_content"
+            android:layout_marginTop="-5dp"
             android:layout_height="wrap_content"
             android:layout_below="@id/right_back_door_button"
             android:layout_alignParentLeft="true"
@@ -56,6 +63,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/front_baoxiao"
+            android:layout_marginTop="-5dp"
             android:layout_alignParentLeft="true"
             android:text="后保险杠" />
 
@@ -65,6 +73,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/back_baoxiao"
             android:layout_alignParentLeft="true"
+            android:layout_marginTop="-5dp"
             android:text="前机盖" />
 
         <Button
@@ -72,6 +81,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/front_cover"
+            android:layout_marginTop="-5dp"
             android:layout_alignParentLeft="true"
             android:text="后尾箱" />
     </RelativeLayout>

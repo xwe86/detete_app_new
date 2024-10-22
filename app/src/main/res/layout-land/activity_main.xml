@@ -37,7 +37,6 @@
 <!--            tools:context=".MainActivity"/>-->
 
 
-
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -46,15 +45,16 @@
         <FrameLayout
             android:id="@+id/fragment_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:layout_marginTop="-50dp" />
 
         <Button
             android:id="@+id/car_plate_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
-            android:layout_marginTop="0dp"
-            android:text="车牌" />
+            android:text="车牌"
+            android:textSize="13sp" />
 
         <Button
             android:id="@+id/vin_id_button"
@@ -62,58 +62,69 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/car_plate_button"
             android:layout_alignParentLeft="true"
-            android:layout_marginTop="0dp"
-            android:layout_marginBottom="0dp"
-            android:text="车架" />
+            android:layout_marginTop="-5dp"
+            android:text="车架"
+            android:textSize="13sp" />
+
         <Button
             android:id="@+id/id_card_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/vin_id_button"
-            android:layout_marginTop="0dp"
-            android:layout_marginBottom="0dp"
+            android:layout_alignParentLeft="true"
+            android:layout_marginTop="-5dp"
             android:text="身份证"
-            android:layout_alignParentLeft="true"/>
+            android:textSize="13sp" />
 
         <Button
             android:id="@+id/vehicle_id_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="行驶证"
             android:layout_below="@id/id_card_button"
-            android:layout_marginTop="0dp"
-            android:layout_alignParentLeft="true" />
+            android:layout_alignParentLeft="true"
+            android:layout_marginTop="-5dp"
+            android:text="模型测试"
+            android:textSize="13sp" />
 
         <Button
             android:id="@+id/driver_id_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="驾驶证"
             android:layout_below="@id/vehicle_id_button"
-            android:layout_alignParentLeft="true" />
+            android:layout_alignParentLeft="true"
+            android:layout_marginTop="-5dp"
+            android:text="驾驶证"
+            android:textSize="13sp" />
 
         <Button
             android:id="@+id/car_front_45_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="前45°"
             android:layout_below="@id/driver_id_button"
-            android:layout_alignParentLeft="true" />
+            android:layout_alignParentLeft="true"
+            android:layout_marginTop="-5dp"
+            android:text="前45°"
+            android:textSize="13sp" />
 
         <Button
             android:id="@+id/car_back_45_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="后45°"
             android:layout_below="@id/car_front_45_button"
-            android:layout_alignParentLeft="true" />
+            android:layout_alignParentLeft="true"
+            android:layout_marginTop="-5dp"
+            android:text="后45°"
+            android:textSize="13sp" />
 
         <Button
             android:id="@+id/car_damage_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="损伤部位"
             android:layout_below="@id/car_back_45_button"
-            android:layout_alignParentLeft="true" />
+            android:layout_alignParentLeft="true"
+            android:layout_marginTop="-5dp"
+            android:text="损伤部位"
+            android:textSize="13sp" />
     </RelativeLayout>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
