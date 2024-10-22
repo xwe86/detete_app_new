@@ -96,12 +96,12 @@ class OverlayDriverIdView(context: Context?, attrs: AttributeSet?) : View(contex
             val left = boundingBox.left * scaleFactor
             val right = boundingBox.right * scaleFactor
 
+            var tipText = "识别成功"
             if (checkIsTarget(result)) {
                 Log.d(
                     "绘图层",
                     "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
                 )
-                var tipText = "";
                 if (boundingBox.bottom - boundingBox.top < 150L) {
                     tipText = "请靠近";
                     Log.d("绘图层", "原始数据位置提示 请靠近")

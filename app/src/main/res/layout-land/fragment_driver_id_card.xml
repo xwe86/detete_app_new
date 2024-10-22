@@ -35,19 +35,19 @@
 <!--        android:text="识别提示"-->
 <!--        android:textColor="@color/detect_tip"-->
 <!--        android:textSize="@dimen/detect_tip_text_size" />-->
-    <TextView
-        android:id="@+id/detect_data"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="0dp"
-        android:layout_marginTop="130dp"
-        android:ellipsize="end"
-        android:text="识别结果："
-        android:textColor="@color/detect_data"
-        android:textSize="@dimen/detect_tip_text_size"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent" />
+<!--    <TextView-->
+<!--        android:id="@+id/detect_data"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginLeft="0dp"-->
+<!--        android:layout_marginTop="130dp"-->
+<!--        android:ellipsize="end"-->
+<!--        android:text="识别结果："-->
+<!--        android:textColor="@color/detect_data"-->
+<!--        android:textSize="@dimen/detect_tip_text_size"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintHorizontal_bias="0.5"-->
+<!--        app:layout_constraintStart_toStartOf="parent" />-->
 
 
     <org.tensorflow.lite.examples.objectdetection.OverlayDriverIdView
@@ -94,7 +94,9 @@
 
     <ImageView
         android:id="@+id/car_bg"
-        android:layout_width="700dp"
+        android:layout_width="500dp"
+        android:layout_marginLeft="110dp"
+        android:layout_marginTop="50dp"
         android:layout_height="wrap_content"
         android:rotation="0"
         android:src="@drawable/camera_driver_card_front" />
