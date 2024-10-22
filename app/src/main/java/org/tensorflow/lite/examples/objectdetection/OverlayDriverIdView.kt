@@ -86,7 +86,7 @@ class OverlayDriverIdView(context: Context?, attrs: AttributeSet?) : View(contex
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-        drawOneRect(55f, 280f, 100f, 530f, canvas)
+//        drawOneRect(55f, 280f, 100f, 530f, canvas)
 
         for (result in results) {
             val boundingBox = result.boundingBox
@@ -102,7 +102,7 @@ class OverlayDriverIdView(context: Context?, attrs: AttributeSet?) : View(contex
                     "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
                 )
                 var tipText = "";
-                if (boundingBox.bottom - boundingBox.top < 190L) {
+                if (boundingBox.bottom - boundingBox.top < 150L) {
                     tipText = "请靠近";
                     Log.d("绘图层", "原始数据位置提示 请靠近")
                 }
@@ -120,6 +120,9 @@ class OverlayDriverIdView(context: Context?, attrs: AttributeSet?) : View(contex
                 }
                 drawOneText(tipText, 300f, 260f ,canvas)
 
+            } else {
+                Log.d("绘图层", "原始数据位置提示 未识别到驾驶证")
+                drawOneText("未识别到驾驶证", 300f, 260f ,canvas)
             }
 
             // Draw bounding box around detected objects

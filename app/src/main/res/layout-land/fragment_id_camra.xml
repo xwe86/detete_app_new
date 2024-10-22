@@ -13,26 +13,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:scaleType="fillStart">
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
 
-            <!-- Camera control and gallery buttons -->
-            <ImageButton
-                android:id="@+id/camera_capture_button"
-                android:layout_width="@dimen/round_button_large"
-                android:layout_height="@dimen/round_button_large"
-                android:layout_marginEnd="@dimen/shutter_button_margin"
-                android:scaleType="fitCenter"
-                android:background="@drawable/ic_shutter"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintVertical_bias="0.5"
-                app:layout_constraintEnd_toEndOf="parent"
-                android:contentDescription="@string/capture_button_alt" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.camera.view.PreviewView>
-
 
     <TextView
         android:id="@+id/inference_time_val"
@@ -44,15 +26,6 @@
         android:textColor="@color/bottom_sheet_text_color"
         android:textSize="@dimen/bottom_sheet_text_size" />
 
-    <TextView
-        android:id="@+id/detect_tip"
-        android:layout_width="match_parent"
-        android:layout_height="126dp"
-        android:layout_marginLeft="280dp"
-        android:layout_marginTop="330dp"
-        android:text="识别提示"
-        android:textColor="@color/detect_tip"
-        android:textSize="@dimen/detect_tip_text_size" />
     <TextView
         android:id="@+id/detect_data"
         android:layout_width="wrap_content"
@@ -70,10 +43,8 @@
 
     <org.tensorflow.lite.examples.objectdetection.OverlayIDCardView
         android:id="@+id/overlayIdCard"
-        android:layout_width="609dp"
-        android:layout_height="346dp"
-        app:layout_anchor="@+id/car_bg"
-        app:layout_anchorGravity="center" />
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
     <ImageView
         android:id="@+id/arrow_left"
@@ -118,5 +89,24 @@
         android:layout_height="wrap_content"
         android:rotation="0"
         android:src="@drawable/camera_idcard_front" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Camera control and gallery buttons -->
+        <ImageButton
+            android:id="@+id/camera_capture_button"
+            android:layout_width="@dimen/round_button_large"
+            android:layout_height="@dimen/round_button_large"
+            android:layout_marginEnd="@dimen/shutter_button_margin"
+            android:scaleType="fitCenter"
+            android:background="@drawable/ic_shutter"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintVertical_bias="0.5"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:contentDescription="@string/capture_button_alt" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
