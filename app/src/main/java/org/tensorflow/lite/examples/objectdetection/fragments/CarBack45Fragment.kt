@@ -359,7 +359,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
                         val fileUploader = FileUploader()
-                        fileUploader.uploadFile(croppedPhotoFile, "1", "",object : Callback {
+                        fileUploader.uploadFile(croppedPhotoFile, "2", "",object : Callback {
                             override fun onFailure(call: Call, e: IOException) {
                                 Log.e("45", "Upload failed: ${e.message}")
                             }
