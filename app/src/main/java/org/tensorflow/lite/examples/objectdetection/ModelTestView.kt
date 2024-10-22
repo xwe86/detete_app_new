@@ -30,7 +30,7 @@ import java.util.LinkedList
 import kotlin.math.max
 import org.tensorflow.lite.task.vision.detector.Detection
 
-class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
+class ModelTestView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
 
     private var results: List<Detection> = LinkedList<Detection>()
     private var boxPaint = Paint()
@@ -87,7 +87,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
+        if (results.isNotEmpty()) {
             drawOneRect(120f, 180f, 200f, 350f, canvas)
+        }
 
 
         for (result in results) {
@@ -99,12 +101,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
             val right = boundingBox.right * scaleFactor
 
 
-            var tipText = "识别成功";
+
             if (checkIsTarget(result)) {
                 Log.d(
                     "绘图层",
                     "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
                 )
+                var tipText = "";
                 if (boundingBox.bottom - boundingBox.top < 50L) {
                     tipText = "请靠近";
                     Log.d("绘图层", "原始数据位置提示 请靠近")

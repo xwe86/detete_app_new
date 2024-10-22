@@ -23,17 +23,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import org.tensorflow.lite.examples.objectdetection.databinding.ActivityMainBinding
-import org.tensorflow.lite.examples.objectdetection.fragments.CameraFragment
-import org.tensorflow.lite.examples.objectdetection.fragments.CarBack45Fragment
-import org.tensorflow.lite.examples.objectdetection.fragments.CarFront45Fragment
-import org.tensorflow.lite.examples.objectdetection.fragments.DefualtFragment
-import org.tensorflow.lite.examples.objectdetection.fragments.DriverIdCardFragment
-import org.tensorflow.lite.examples.objectdetection.fragments.IDCamraFragment
-import org.tensorflow.lite.examples.objectdetection.fragments.VINCFragment
-import org.tensorflow.lite.examples.objectdetection.fragments.VINFragment
-import org.tensorflow.lite.examples.objectdetection.fragments.VehicleDamageFragment
-import org.tensorflow.lite.examples.objectdetection.fragments.VehicleIdCardFragment
-import org.tensorflow.lite.examples.objectdetection.util.GlobalRandomIdManager
+import org.tensorflow.lite.examples.objectdetection.fragments.*
 
 
 /**
@@ -72,9 +62,9 @@ class MainActivity : AppCompatActivity() {
         activityMainBinding.idCardButton?.setOnClickListener {
             switchFragment(IDCamraFragment())
         }
-        //行驶证
+        //行驶证 改成模型测试
         activityMainBinding.vehicleIdButton?.setOnClickListener {
-            switchFragment(VehicleIdCardFragment())
+            switchFragment(ModelTestFragment())
         }
         // 驾驶证
         activityMainBinding.driverIdButton?.setOnClickListener {

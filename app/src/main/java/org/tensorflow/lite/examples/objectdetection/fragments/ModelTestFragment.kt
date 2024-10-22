@@ -1,18 +1,3 @@
-/*
- * Copyright 2022 The TensorFlow Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *             http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.tensorflow.lite.examples.objectdetection.fragments
 
 import android.animation.AnimatorSet
@@ -27,6 +12,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.hardware.Camera
 import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.Bundle
@@ -34,23 +20,22 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
-import android.view.*
+import androidx.fragment.app.Fragment
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.camera.core.*
-import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import com.android.example.cameraxbasic.utils.ANIMATION_FAST_MILLIS
 import com.android.example.cameraxbasic.utils.ANIMATION_SLOW_MILLIS
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.Response
 import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCameraBinding
-import org.tensorflow.lite.examples.objectdetection.databinding.VincCameraBinding
+import org.tensorflow.lite.examples.objectdetection.databinding.FragmentModelTestBinding
 import org.tensorflow.lite.examples.objectdetection.util.FileUploader
 import org.tensorflow.lite.examples.objectdetection.util.GlobalRandomIdManager
 import org.tensorflow.lite.task.vision.detector.Detection
@@ -64,17 +49,20 @@ import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
 
 
 /**
- * 车架识别
+ 模型检查
  */
-class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
+class ModelTestFragment :  Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private val TAG = "ObjectDetection"
     private lateinit var windowManager: WindowManager
     private val animatorSet: AnimatorSet = AnimatorSet()
-    private var _fragmentCameraBinding: VincCameraBinding? = null
+    private var _fragmentCameraBinding: FragmentModelTestBinding? = null
     private val fragmentCameraBinding
         get() = _fragmentCameraBinding!!
     private lateinit var objectDetectorHelper: ObjectDetectorHelper
@@ -83,45 +71,20 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var preview: Preview? = null
     private var imageCapture: ImageCapture? = null
     private var imageAnalyzer: ImageAnalysis? = null
-    private var camera: Camera? = null
+    private var fileUploader: FileUploader? = null
+    private var camera: androidx.camera.core.Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
 
     /** Blocking camera operations are performed using this executor */
     private lateinit var cameraExecutor: ExecutorService
 
 
-    private var lastRecordTime = 0L // 上次记录的时间戳
-
-    //识别结果暂存列表
-    val recognitionResults: MutableList<Detection>? = mutableListOf()
-
-    //识别统计结果的间隔， 1s内目标数据出现了，就算识别成功
-    private val recognitionInterval = 1000L
-
-
-
     private val handler = Handler(Looper.getMainLooper())
-    private var tipColseTime = 3000L
-    private var tipLeftTime = 3000L
-    private var tipOKTime = 3000L
 
 
     //从 Paused 状态恢复到 Resumed 状态时，系统会调用 onResume() 方法。
     override fun onResume() {
         super.onResume()
-//        // Make sure that all permissions are still present, since the
-//        // user could have removed them while the app was in paused state.
-//        //PermissionsFragment.hasPermissions(requireContext()) 是一个自定义方法，它通常用于检查应用是否具有特定权限，比如相机权限、存储权限等。如果应用没有所需的权限，条件判断为真。
-//        // Navigation.findNavController() 是 Navigation 组件提供的一个方法，用于查找与给定 Activity 相关联的 NavController
-//        if (!PermissionsFragment.hasPermissions(requireContext())) {
-//            //Navigation.findNavController() 是 Navigation 组件提供的一个方法，用于查找与给定 Activity 相关联的 NavController。
-//            //requireActivity() 返回当前 Fragment 所关联的 Activity。
-//            //R.id.fragment_container 是用于承载 Fragment 的容器的 ID。通常，这是在布局文件中定义的 NavHostFragment 的 ID。
-//            Navigation.findNavController(requireActivity(), R.id.fragment_container)
-//                .navigate(CameraFragmentDirections.actionCameraToPermissions())
-//        }
-//
-
 
         handler.post(timerRunnable)
     }
@@ -140,43 +103,21 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _fragmentCameraBinding = VincCameraBinding.inflate(inflater, container, false)
+        _fragmentCameraBinding = FragmentModelTestBinding.inflate(inflater, container, false)
         windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         val permissionFragment = PermissionsFragment()
         if (!PermissionsFragment.hasPermissions(requireContext())) {
             // 请求授权
             parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, permissionFragment)
-                    .addToBackStack(null)
-                    .commit()
+                .replace(R.id.fragment_container, permissionFragment)
+                .addToBackStack(null)
+                .commit()
         }
 
         return fragmentCameraBinding.root
     }
 
-    private fun playLeft() {
-//        val animatorSet = AnimatorSet()
-        val imageView = fragmentCameraBinding.arrowLeft
-        imageView.visibility = View.VISIBLE
-        val translationAnim = ObjectAnimator.ofFloat(imageView, "translationX", 200f, 50f)
-        translationAnim.repeatCount = 10 // 设置重复次数为无限
-        translationAnim.duration = 1000 // 设置动画持续时间
-        translationAnim.interpolator = LinearInterpolator() // 设置插值器，可以使动画匀速播放
-        val alphaAnim = ObjectAnimator.ofFloat(imageView, "alpha", 1.0f, 0.0f)
-        alphaAnim.repeatCount = ValueAnimator.INFINITE
-        alphaAnim.duration = 1000
-        animatorSet.playTogether(translationAnim, alphaAnim)
-        // 设置目标View,播放动画
-        animatorSet.start()
-    }
-
-    private fun playLeftStop() {
-        val imageView = fragmentCameraBinding.arrowLeft
-        imageView.visibility = View.INVISIBLE
-        // 设置目标View,播放动画
-        animatorSet.cancel()
-    }
 
 
     @SuppressLint("MissingPermission")
@@ -232,7 +173,6 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         // CameraSelector - makes assumption that we're only using the back camera
         val cameraSelector =
             CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
-        lastRecordTime = System.currentTimeMillis();
 
         // Preview. Only using the 4:3 ratio because this is the closest to our models
         preview =
@@ -264,7 +204,7 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
                 .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
                 // The analyzer can then be assigned to the instance
                 .also {
@@ -284,12 +224,6 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     }
                 }
         // Listener for button used to capture photo
-        //监听按钮拍照
-        fragmentCameraBinding?.cameraCaptureButton?.setOnClickListener {
-            // 存图
-            saveImage()
-
-        }
 
         // Must unbind the use-cases before rebinding them
         cameraProvider.unbindAll()
@@ -359,7 +293,7 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
                         // 保存裁剪后的图片到新的文件
                         val croppedPhotoFile: File =
-                            File("/storage/emulated/0//Pictures/test/12.jpg")
+                            File("/storage/emulated/0//Pictures/test/11.jpg")
                         try {
                             FileOutputStream(croppedPhotoFile).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
@@ -372,6 +306,7 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         // 清理资源
                         originalBitmap.recycle()
                         croppedBitmap.recycle()
+
                         // 获取全局随机 ID
                         val globalRandomId: String = GlobalRandomIdManager.getGlobalRandomId();
                         Log.d("camera", "Global Random ID: $globalRandomId")
@@ -379,7 +314,7 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
                         val fileUploader = FileUploader()
-                        fileUploader.uploadFile(croppedPhotoFile, "12", "",object : Callback {
+                        fileUploader.uploadFile(croppedPhotoFile, "11", "",object : Callback {
                             override fun onFailure(call: Call, e: IOException) {
                                 Log.e("45", "Upload failed: ${e.message}")
                             }
@@ -393,14 +328,13 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                             }
                         })
 
-
                         // Implicit broadcasts will be ignored for devices running API level >= 24
                         // so if you only target API level 24+ you can remove this statement
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                             // Suppress deprecated Camera usage needed for API level 23 and below
                             @Suppress("DEPRECATION")
                             requireActivity().sendBroadcast(
-                                Intent(android.hardware.Camera.ACTION_NEW_PICTURE, savedUri)
+                                Intent(Camera.ACTION_NEW_PICTURE, savedUri)
                             )
                         }
                     }
@@ -487,17 +421,6 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 fragmentCameraBinding.inferenceTimeVal.text =
                     String.format("%d ms", inferenceTime)
 
-                //处理识别结果
-                val currentTime = System.currentTimeMillis()
-                // 每秒更新一次提示
-                if (currentTime - lastRecordTime >= recognitionInterval) {
-                    results?.let { recognitionResults?.addAll(it) }
-                    // 处理图像并记录结果
-                    recordAnalysisResult(results, "" + lastRecordTime)
-
-                    lastRecordTime = currentTime
-                }
-
                 // Pass necessary information to OverlayView for drawing on the canvas
                 fragmentCameraBinding.overlay.setResults(
                     results ?: LinkedList<Detection>(),
@@ -520,14 +443,6 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         override fun run() {
             handler.postDelayed(this, 1000)
         }
-    }
-
-
-    /**
-     * 设置提示文案
-     */
-    fun showTipsText(text: String) {
-        fragmentCameraBinding.detectTip.text = text
     }
 
 
@@ -564,8 +479,6 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
 
 
-        fragmentCameraBinding.detectData.text = dataSet.joinToString(separator = ", ")
-
 
     }
 
@@ -579,7 +492,7 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         override fun onDisplayAdded(displayId: Int) = Unit
         override fun onDisplayRemoved(displayId: Int) = Unit
         override fun onDisplayChanged(displayId: Int) = view?.let { view ->
-            if (displayId == this@VINCFragment.displayId) {
+            if (displayId == this@ModelTestFragment.displayId) {
                 Log.d(TAG, "Rotation changed: ${view.display.rotation}")
                 imageCapture?.targetRotation = view.display.rotation
                 imageAnalyzer?.targetRotation = view.display.rotation
@@ -590,8 +503,7 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     override fun onPause() {
         super.onPause()
         handler.removeCallbacksAndMessages(null)
-        val imageView = fragmentCameraBinding.arrowLeft
-        imageView.visibility = View.INVISIBLE
+
         // 设置目标View,播放动画
         animatorSet.cancel()
         imageAnalyzer?.clearAnalyzer()
@@ -602,6 +514,7 @@ class VINCFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         handler.removeCallbacksAndMessages(null)
         // 设置目标View,播放动画
         animatorSet.cancel()
+        imageAnalyzer?.clearAnalyzer()
     }
 
     override fun onError(error: String) {
