@@ -41,7 +41,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     private var scaleFactor: Float = 1f
 
     private var bounds = Rect()
-
+    var tipText = "";
     // 声明全局变量保存识别结果
     var recognitionResult = ""
 
@@ -87,52 +87,31 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-            drawOneRect(100f, 200f, 180f, 360f, canvas)
+        drawOneRect(100f, 200f, 180f, 360f, canvas)
 
+
+        val dataSet = HashSet<String>()
+        var plateBoundingBox : RectF? = null
 
         for (result in results) {
             val boundingBox = result.boundingBox
-
+            if (!checkIsTarget(result)) {
+                continue
+            }
+            plateBoundingBox = boundingBox
             val top = boundingBox.top * scaleFactor
             val bottom = boundingBox.bottom * scaleFactor
             val left = boundingBox.left * scaleFactor
             val right = boundingBox.right * scaleFactor
-
-
-            var tipText = "识别成功";
-
-
-            if (checkIsTarget(result)) {
-                Log.d(
-                    "绘图层",
-                    "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
-                )
-                if (boundingBox.bottom - boundingBox.top < 50L) {
-                    tipText = "请靠近";
-                    Log.d("绘图层", "原始数据位置提示 请靠近")
-                }
-                if (boundingBox.bottom - boundingBox.top > 130L) {
-                    tipText = "请稍微离远";
-                    Log.d("绘图层", "原始数据位置提示 请稍微离远")
-                }
-                if (boundingBox.left < 130L) {
-                    tipText = "请稍微请向右";
-                    Log.d("绘图层", "原始数据位置提示 请稍微请向左")
-                }
-                if (boundingBox.right > 450L) {
-                    tipText = "请稍微请向左";
-                    Log.d("绘图层", "原始数据位置提示 请稍微请向右")
-                }
-                drawOneText(tipText, 300f, 260f ,canvas)
-            }
-
+            dataSet.add(result.categories[0].label)
 
             // Draw bounding box around detected objects
             val drawableRect = RectF(left, top, right, bottom)
             canvas.drawRect(drawableRect, boxPaint)
 
             // Create text to display alongside detected objects
-            val drawableText = result.categories[0].label + " " + String.format("%.2f", result.categories[0].score)
+            val drawableText =
+                result.categories[0].label + " " + String.format("%.2f", result.categories[0].score)
 
             // Draw rect behind display text
             textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)
@@ -156,14 +135,43 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
             // Draw text for detected object
             canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
         }
+
+
+        if (dataSet.isNotEmpty() && dataSet.contains("plate") && plateBoundingBox !=null) {
+            if (plateBoundingBox.bottom - plateBoundingBox.top < 50L) {
+                tipText = "请靠近车牌";
+                Log.d("绘图层", "原始数据位置提示 请靠近")
+            }
+            if (plateBoundingBox.bottom - plateBoundingBox.top > 130L) {
+                tipText = "请稍微离远";
+                Log.d("绘图层", "原始数据位置提示 请稍微离远")
+            }
+            if (plateBoundingBox.left < 130L) {
+                tipText = "请稍微请向右";
+                Log.d("绘图层", "原始数据位置提示 请稍微请向左")
+            }
+            if (plateBoundingBox.right > 450L) {
+                tipText = "请稍微请向左";
+                Log.d("绘图层", "原始数据位置提示 请稍微请向右")
+            }
+            drawOneText(tipText, 300f, 260f, canvas)
+
+        } else {
+            var tipText = "请走近车牌,未识别到车牌";
+            drawOneText(tipText, 300f, 260f, canvas)
+
+        }
+
     }
-    fun checkIsTarget(result:Detection ): Boolean {
+
+    fun checkIsTarget(result: Detection): Boolean {
         return "plate" == result.categories[0].label
     }
+
     fun setResults(
-      detectionResults: MutableList<Detection>,
-      imageHeight: Int,
-      imageWidth: Int,
+        detectionResults: MutableList<Detection>,
+        imageHeight: Int,
+        imageWidth: Int,
     ) {
         results = detectionResults
 
@@ -191,8 +199,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     }
 
 
-
-    fun drawOneText(tipText: String,
+    fun drawOneText(
+        tipText: String,
         top: Float, bottom: Float,
         canvas: Canvas
     ) {
@@ -200,7 +208,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         val top = top * scaleFactor
         val bottom = bottom * scaleFactor
 
-        canvas.drawText(tipText, top, bottom ,textTipPaint )
+        canvas.drawText(tipText, top, bottom, textTipPaint)
 
     }
 
