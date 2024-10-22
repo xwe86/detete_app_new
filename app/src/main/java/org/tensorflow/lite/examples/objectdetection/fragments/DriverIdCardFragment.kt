@@ -549,7 +549,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             // 在Activity或Fragment中调用以下代码来显示Toast消息
 //            Toast.makeText(context, "45°成功保存图像", Toast.LENGTH_SHORT).show()
         }
-        fragmentDriverIdCardBinding.detectData.text = dataSet.joinToString(separator = ", ")
+        fragmentDriverIdCardBinding.detectData?.text = dataSet.joinToString(separator = ", ")
     }
 
 

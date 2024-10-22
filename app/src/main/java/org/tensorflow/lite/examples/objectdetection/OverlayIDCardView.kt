@@ -97,7 +97,7 @@ class OverlayIDCardView(context: Context?, attrs: AttributeSet?) : View(context,
             val left = boundingBox.left * scaleFactor
             val right = boundingBox.right * scaleFactor
 
-            var tipText = ""
+            var tipText = "识别成功"
             if (checkIsTarget(result)) {
                 Log.d(
                     "绘图层",
