@@ -74,11 +74,11 @@ class MainActivity : AppCompatActivity() {
         }
         //行驶证
         activityMainBinding.vehicleIdButton?.setOnClickListener {
-            switchFragment(DriverIdCardFragment())
+            switchFragment(VehicleIdCardFragment())
         }
         // 驾驶证
         activityMainBinding.driverIdButton?.setOnClickListener {
-            switchFragment(VehicleIdCardFragment())
+            switchFragment(DriverIdCardFragment())
         }
         //前45°
         activityMainBinding.carFront45Button?.setOnClickListener {

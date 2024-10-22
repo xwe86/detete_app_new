@@ -514,7 +514,7 @@ class DriverIdCardFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
      * 设置提示文案
      */
     fun showTipsText(text: String) {
-        fragmentDriverIdCardBinding.detectTip.text = text
+        fragmentDriverIdCardBinding.detectTip?.text = text
     }
 
 

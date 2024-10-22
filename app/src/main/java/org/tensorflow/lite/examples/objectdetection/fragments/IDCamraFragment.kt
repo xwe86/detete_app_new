@@ -514,7 +514,7 @@ class IDCamraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
      * 设置提示文案
      */
     fun showTipsText(text: String) {
-        fragmentIdCamraBinding.detectTip.text = text
+        fragmentIdCamraBinding.detectTip?.text = text
     }
 
 
