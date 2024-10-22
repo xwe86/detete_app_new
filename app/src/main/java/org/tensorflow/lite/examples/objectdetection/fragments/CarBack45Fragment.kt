@@ -39,6 +39,7 @@ import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCarBack45Binding
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCarFront45Binding
+import org.tensorflow.lite.examples.objectdetection.util.CustomDataStructure
 import org.tensorflow.lite.examples.objectdetection.util.FileUploader
 import org.tensorflow.lite.examples.objectdetection.util.GlobalRandomIdManager
 import org.tensorflow.lite.task.vision.detector.Detection
@@ -53,7 +54,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-
 
 
 /**
@@ -79,13 +79,8 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     /** Blocking camera operations are performed using this executor */
     private lateinit var cameraExecutor: ExecutorService
 
+    private var customData: CustomDataStructure = CustomDataStructure()
 
-    //识别结果暂存列表
-    val recognitionResults: MutableList<Detection>? = mutableListOf()
-    private var lastRecordTime = 0L // 上次记录的时间戳
-
-    //识别统计结果的间隔， 1s内目标数据出现了，就算识别成功
-    private val recognitionInterval = 100L
 
     private val displayManager by lazy {
         requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
@@ -110,9 +105,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _fragmentCameraBinding = FragmentCarBack45Binding.inflate(inflater, container, false)
         windowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -123,9 +116,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         if (!PermissionsFragment.hasPermissions(requireContext())) {
             // 请求授权
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, permissionFragment)
-                .addToBackStack(null)
-                .commit()
+                .replace(R.id.fragment_container, permissionFragment).addToBackStack(null).commit()
         }
 
         return fragmentCameraBinding.root
@@ -160,8 +151,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         super.onViewCreated(view, savedInstanceState)
 
         objectDetectorHelper = ObjectDetectorHelper(
-            context = requireContext(),
-            objectDetectorListener = this
+            context = requireContext(), objectDetectorListener = this
         )
 
         // Initialize our background executor
@@ -173,6 +163,24 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             setUpCamera()
         }
 
+        // Listener for button used to capture photo
+        //监听按钮拍照
+        fragmentCameraBinding?.cameraCaptureButton?.setOnClickListener {
+            // 存图
+            saveImage()
+
+        }
+        // Listener for button used to capture photo
+        //监听按钮拍照
+        fragmentCameraBinding?.cameraReopenButton?.setOnClickListener {
+
+            // Wait for the views to be properly laid out
+            fragmentCameraBinding.viewFinder.post {
+                // Set up the camera and its use cases
+                setUpCamera()
+            }
+
+        }
         showOrNoShowView()
     }
 
@@ -186,8 +194,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
                 // Build and bind the camera use cases
                 bindCameraUseCases()
-            },
-            ContextCompat.getMainExecutor(requireContext())
+            }, ContextCompat.getMainExecutor(requireContext())
         )
     }
 
@@ -209,64 +216,48 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         // CameraSelector - makes assumption that we're only using the back camera
         val cameraSelector =
             CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
-        lastRecordTime = System.currentTimeMillis();
 
         // Preview. Only using the 4:3 ratio because this is the closest to our models
-        preview =
-            Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
-                .build()
+        preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3)
+            .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation).build()
 
 
         // ImageCapture
         // 设置目标分辨率
         // 例如，设置分辨率为 1280x720
 
-        imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+        imageCapture =
+            ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
 //            .setTargetResolution(targetResolution)
-            // We request aspect ratio but no resolution to match preview config, but letting
-            // CameraX optimize for whatever specific resolution best fits our use cases
-            .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-            // Set initial target rotation, we will have to call this again if rotation changes
-            // during the lifecycle of this use case
-            .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
-            .build()
+                // We request aspect ratio but no resolution to match preview config, but letting
+                // CameraX optimize for whatever specific resolution best fits our use cases
+                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                // Set initial target rotation, we will have to call this again if rotation changes
+                // during the lifecycle of this use case
+                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation).build()
 
 
         //   分析相机捕获的图像帧 ImageAnalysis. Using RGBA 8888 to match how our models work
-        imageAnalyzer =
-            ImageAnalysis.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .build()
-                // The analyzer can then be assigned to the instance
-                .also {
-                    it.setAnalyzer(cameraExecutor) { image ->
-                        if (!::bitmapBuffer.isInitialized) {
-                            // The image rotation and RGB image buffer are initialized only once
-                            // the analyzer has started running
-                            bitmapBuffer = Bitmap.createBitmap(
-                                image.width,
-                                image.height,
-                                Bitmap.Config.ARGB_8888
-                            )
-                            Log.d(tag, "照片尺寸${image.width} ${image.height}")
-                        }
-
-                        detectObjects(image)
+        imageAnalyzer = ImageAnalysis.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3)
+            .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888).build()
+            // The analyzer can then be assigned to the instance
+            .also {
+                it.setAnalyzer(cameraExecutor) { image ->
+                    if (!::bitmapBuffer.isInitialized) {
+                        // The image rotation and RGB image buffer are initialized only once
+                        // the analyzer has started running
+                        bitmapBuffer = Bitmap.createBitmap(
+                            image.width, image.height, Bitmap.Config.ARGB_8888
+                        )
+                        Log.d(tag, "照片尺寸${image.width} ${image.height}")
                     }
-                }
-        // Listener for button used to capture photo
-        //监听按钮拍照
-        fragmentCameraBinding?.cameraCaptureButton?.setOnClickListener {
-            // 存图
-            saveImage()
 
-        }
+                    detectObjects(image)
+                }
+            }
+
 
         // Must unbind the use-cases before rebinding them
         cameraProvider.unbindAll()
@@ -293,8 +284,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
             Log.i("相机", "开点击了拍照")
             // Create time stamped name and MediaStore entry.
-            val name = SimpleDateFormat(FILENAME, Locale.US)
-                .format(System.currentTimeMillis())
+            val name = SimpleDateFormat(FILENAME, Locale.US).format(System.currentTimeMillis())
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, name)
                 put(MediaStore.MediaColumns.MIME_TYPE, PHOTO_TYPE)
@@ -305,17 +295,16 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             }
 
             // Create output options object which contains file + metadata
-            val outputOptions = ImageCapture.OutputFileOptions
-                .Builder(
-                    requireContext().contentResolver,
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                    contentValues
-                )
-                .build()
+            val outputOptions = ImageCapture.OutputFileOptions.Builder(
+                requireContext().contentResolver,
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                contentValues
+            ).build()
 
             // Setup image capture listener which is triggered after photo has been taken
-            imageCapture.takePicture(
-                outputOptions, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
+            imageCapture.takePicture(outputOptions,
+                cameraExecutor,
+                object : ImageCapture.OnImageSavedCallback {
                     override fun onError(exc: ImageCaptureException) {
                         Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
                     }
@@ -357,9 +346,8 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         Log.d("camera", "Global Random ID: $globalRandomId")
 
 
-
                         val fileUploader = FileUploader()
-                        fileUploader.uploadFile(croppedPhotoFile, "2", "",object : Callback {
+                        fileUploader.uploadFile(croppedPhotoFile, "2", "", object : Callback {
                             override fun onFailure(call: Call, e: IOException) {
                                 Log.e("45", "Upload failed: ${e.message}")
                             }
@@ -377,8 +365,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         // so if you only target API level 24+ you can remove this statement
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                             // Suppress deprecated Camera usage needed for API level 23 and below
-                            @Suppress("DEPRECATION")
-                            requireActivity().sendBroadcast(
+                            @Suppress("DEPRECATION") requireActivity().sendBroadcast(
                                 Intent(Camera.ACTION_NEW_PICTURE, savedUri)
                             )
                         }
@@ -435,8 +422,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         Log.d(
-            "相机",
-            "相机位置变更 ${fragmentCameraBinding.viewFinder.display.rotation}   ==>  $newConfig "
+            "相机", "相机位置变更 ${fragmentCameraBinding.viewFinder.display.rotation}   ==>  $newConfig "
         )
         imageAnalyzer?.targetRotation = fragmentCameraBinding.viewFinder.display.rotation
 
@@ -463,46 +449,28 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     //在检测到对象后更新 UI。提取原始图像高度/宽度
     //    通过 OverlayVie 正确缩放和放置边界框
     override fun onResults(
-        results: MutableList<Detection>?,
-        inferenceTime: Long,
-        imageHeight: Int,
-        imageWidth: Int
+        results: MutableList<Detection>?, inferenceTime: Long, imageHeight: Int, imageWidth: Int
     ) {
         activity?.runOnUiThread {
             try {
-                fragmentCameraBinding.inferenceTimeVal.text =
-                    String.format("%d ms", inferenceTime)
+                fragmentCameraBinding.inferenceTimeVal.text = String.format("%d ms", inferenceTime)
 
-                val empty = results?.isEmpty()
-                if (!empty!!){
-                    //处理识别结果
-                    val currentTime = System.currentTimeMillis()
-                    // 每秒更新一次提示
-                    if (currentTime - lastRecordTime >= recognitionInterval) {
-                        results?.let { recognitionResults?.addAll(it) }
-// 处理图像增加提示信息
-                        recordAnalysisResult(results)
-                        lastRecordTime = currentTime
-                    }
+                //记录最新的如果 150ms
+                recordAnalysisResult(results)
+                // Pass necessary information to OverlayView for drawing on the canvas
+                fragmentCameraBinding.overlay.setResults(
+                    results ?: LinkedList<Detection>(), imageHeight, imageWidth
+                )
+                val viewWidth = fragmentCameraBinding.overlay.width
+                val viewHeight = fragmentCameraBinding.overlay.height
 
-                    // Pass necessary information to OverlayView for drawing on the canvas
-                    fragmentCameraBinding.overlay.setResults(
-                        results ?: LinkedList<Detection>(),
-                        imageHeight,
-                        imageWidth
-                    )
-                    val viewWidth = fragmentCameraBinding.overlay.width
-                    val viewHeight = fragmentCameraBinding.overlay.height
+                val scaleFactor =
+                    max(viewWidth * 1f / imageWidth, viewHeight * 1f / imageHeight)
+                Log.i(
+                    "overLayView",
+                    " scaleFactor $scaleFactor , width：$viewWidth, height:$viewHeight, imageWith：$imageWidth, imageHeight $imageHeight"
+                )
 
-                    val scaleFactor = max(viewWidth * 1f / imageWidth, viewHeight * 1f / imageHeight)
-                    Log.i(
-                        "overLayView",
-                        " scaleFactor $scaleFactor , width：$viewWidth, height:$viewHeight, imageWith：$imageWidth, imageHeight $imageHeight"
-                    )
-
-                }else{
-                    showTipsText("未识别到任何数据，请靠近车辆")
-                }
 
 
                 Log.i("相机", " imageWith：$imageWidth, imageHeight $imageHeight")
@@ -524,87 +492,126 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
     private fun recordAnalysisResult(results: List<Detection>?) {
         // 处理图像并记录结果的逻辑
-        // 创建一个 Set 集合，用于存放 List 中的数据
-        val dataSet = HashSet<String>()
         var tipText = ""
 
 
-        //查看整个识别数据的边界
-        var targetTop = 200f
-        var targetBottom = 0f
-        var targetLeft = 400f
-        var targetRight = 0f
-
+        val recordTime = System.currentTimeMillis();
         for (result in results ?: LinkedList<Detection>()) {
-            dataSet.add(result.categories[0].label)
-            targetTop = minOf(targetTop, result.boundingBox.top)
-            targetBottom = maxOf(targetBottom, result.boundingBox.bottom)
-            targetLeft = minOf(targetLeft, result.boundingBox.left)
-            targetRight = maxOf(targetRight, result.boundingBox.right)
+            customData.putData(
+                result.categories[0].label, CustomDataStructure.DataObject(result, recordTime)
+            )
         }
 
-
-
-
-        if (dataSet.isEmpty()) {
+        val dataMap = customData.getValidDataMap()
+        if (dataMap.isEmpty()) {
             tipText = "未识别到任何数据，请靠近车辆"
             showTipsText(tipText)
             return
-        } else if (!dataSet.contains("backDoor")) {
-            tipText = "未识别到车门，请靠近后车门"
-            showTipsText(tipText)
-            return
-        } else if (dataSet.contains("backDoor")) {
-            val matchFound = dataSet.any { it.startsWith("front") && it != "frontdDoor" }
-            if (matchFound) {
-                tipText = "识别到前车组件，请向左移动"
-                showTipsText(tipText)
-                return
+        } else {
+            //查看整个识别数据的边界
+            var targetTop = 200f
+            var targetBottom = 0f
+            var targetLeft = 400f
+            var targetRight = 0f
+            for (dataObject in dataMap.values) {
+                val result = dataObject.data
+                targetTop = minOf(targetTop, result.boundingBox.top)
+                targetBottom = maxOf(targetBottom, result.boundingBox.bottom)
+                targetLeft = minOf(targetLeft, result.boundingBox.left)
+                targetRight = maxOf(targetRight, result.boundingBox.right)
+                Log.i("后45","识别的边界值：$targetTop $targetBottom $targetLeft $targetRight")
             }
 
-            //前机盖 前叶子板 前门  前保险杆
-            if (dataSet.size >= 2 && dataSet.containsAll(
-                    setOf(
-                        "backDoor",
-                        "backBumper"
+
+            val validKeySet = dataMap.keys
+            if (!validKeySet.contains("backDoor")) {
+                tipText = "未识别到后车门，请靠近后车门"
+                showTipsText(tipText)
+                return
+            } else if (validKeySet.contains("backDoor")) {
+                val matchFound = validKeySet.any { it.startsWith("front") && it != "frontdDoor" }
+                if (matchFound) {
+                    tipText = "识别到前车组件，请向左移动"
+                    showTipsText(tipText)
+                    return
+                }
+
+                //同时识别到后车门和前车门 判断位置， 如用户在左后方， 前车门的left 小于后车门的left,
+                //如果在有后方，前车门的left 大于后车门的left
+                if (validKeySet.contains("frontdDoor")) {
+                    val frontDoorLeft = dataMap["frontdDoor"]?.data?.boundingBox?.left
+                    val backDoorLeft = dataMap["backDoor"]?.data?.boundingBox?.left
+                    if (frontDoorLeft != null) {
+                        if (frontDoorLeft < backDoorLeft!!) {
+                            tipText = "当前位置在左边，请右移到右后45度"
+                            showTipsText(tipText)
+                            return
+                        } else {
+                            tipText = "当前位置在右边，请向左移动靠近后背箱"
+                            showTipsText(tipText)
+                            return
+                        }
+                    }
+                }
+
+
+
+
+                if (targetBottom - targetTop < 90L) {
+                    tipText = "请靠近";
+                    showTipsText(tipText)
+                    Log.d("绘图层", "原始数据位置提示 请靠近")
+                    return
+                }
+                if (targetBottom - targetTop > 225L) {
+                    tipText = "请稍微离远";
+                    showTipsText(tipText)
+                    Log.d("绘图层", "原始数据位置提示 请稍微离远")
+                    return
+                }
+                if (targetBottom <220L){
+                    tipText = "请稍微放抬高手机";
+                    showTipsText(tipText)
+                    return
+                }
+                if (targetLeft < 10L) {
+                    tipText = "请稍微请向左";
+                    showTipsText(tipText)
+                    Log.d("绘图层", "原始数据位置提示 请稍微请向左")
+                    return
+                }
+                if (targetRight > 580L) {
+                    tipText = "请稍微请向右";
+                    showTipsText(tipText)
+                    Log.d("绘图层", "原始数据位置提示 请稍微请向右")
+                    return
+                }
+                //前机盖 前叶子板 前门  前保险杆
+                if (validKeySet.size >= 2 && validKeySet.containsAll(
+                        setOf(
+                            "backDoor", "backBumper"
+                        )
                     )
-                )
-            ) {
-                Log.i("车45度", "45°识别成功开始保存图像")
-                tipText = "45°识别成功";
-                showTipsText(tipText)
-                return
-            }
-            if (targetBottom - targetTop < 90L) {
-                tipText = "请靠近";
-                showTipsText(tipText)
-                Log.d("绘图层", "原始数据位置提示 请靠近")
-                return
-            }
-            if (targetBottom - targetTop > 225L) {
-                tipText = "请稍微离远";
-                showTipsText(tipText)
-                Log.d("绘图层", "原始数据位置提示 请稍微离远")
-                return
-            }
-            if (targetLeft < 10L) {
-                tipText = "请稍微请向左";
-                showTipsText(tipText)
-                Log.d("绘图层", "原始数据位置提示 请稍微请向左")
-                return
-            }
-            if (targetRight > 580L) {
-                tipText = "请稍微请向右";
-                showTipsText(tipText)
-                Log.d("绘图层", "原始数据位置提示 请稍微请向右")
-                return
-            }
+                ) {
+                    Log.i("车45度", "45°识别成功开始保存图像")
+                    tipText = "45°识别成功";
+                    showTipsText(tipText)
+                    autoCapture()
+                    return
+                }
 
+            }
         }
 
 
     }
 
+
+    fun autoCapture() {
+        saveImage()
+        cameraProvider?.unbind(preview)
+        imageAnalyzer?.clearAnalyzer()
+    }
 
     private fun checkIsTarget(result: Detection): Boolean {
         return "frontdDoor" == result.categories[0].label

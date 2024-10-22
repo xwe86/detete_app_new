@@ -48,6 +48,7 @@ import okhttp3.*
 import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCameraBinding
+import org.tensorflow.lite.examples.objectdetection.util.CustomDataStructure
 import org.tensorflow.lite.examples.objectdetection.util.FileUploader
 import org.tensorflow.lite.examples.objectdetection.util.GlobalRandomIdManager
 import org.tensorflow.lite.task.vision.detector.Detection
@@ -94,11 +95,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private val recognitionInterval = 1000L
 
 
-
     private val handler = Handler(Looper.getMainLooper())
-    private var tipColseTime = 3000L
-    private var tipLeftTime = 3000L
-    private var tipOKTime = 3000L
+    private var customData: CustomDataStructure = CustomDataStructure()
 
 
     //从 Paused 状态恢复到 Resumed 状态时，系统会调用 onResume() 方法。
@@ -128,9 +126,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         if (!PermissionsFragment.hasPermissions(requireContext())) {
             // 请求授权
             parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, permissionFragment)
-                    .addToBackStack(null)
-                    .commit()
+                .replace(R.id.fragment_container, permissionFragment)
+                .addToBackStack(null)
+                .commit()
         }
 
         return fragmentCameraBinding.root
@@ -327,15 +325,17 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                         val savedUri = output.savedUri
                         Log.d(TAG, "Photo capture succeeded: $savedUri")
-                        val originalBitmap = BitmapFactory.decodeFile( "/storage/emulated/0//Pictures/test/"+name+".jpg" )
+                        val originalBitmap =
+                            BitmapFactory.decodeFile("/storage/emulated/0//Pictures/test/" + name + ".jpg")
                         val x = 0 // 裁剪区域的左上角x坐标
                         val y = 0 // 裁剪区域的左上角y坐标
-                        val width = originalBitmap.width*0.8 // 裁剪区域的宽度
-                        val height = originalBitmap.height*0.7 // 裁剪区域的高度
+                        val width = originalBitmap.width * 0.8 // 裁剪区域的宽度
+                        val height = originalBitmap.height * 0.7 // 裁剪区域的高度
 
 
                         // 裁剪原始图片
-                        val croppedBitmap = Bitmap.createBitmap(originalBitmap, x, y, width.toInt(), height.toInt())
+                        val croppedBitmap =
+                            Bitmap.createBitmap(originalBitmap, x, y, width.toInt(), height.toInt())
 
 
                         // 保存裁剪后的图片到新的文件
@@ -359,9 +359,8 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         Log.d("camera", "Global Random ID: $globalRandomId")
 
 
-
                         val fileUploader = FileUploader()
-                        fileUploader.uploadFile(croppedPhotoFile, "11", "",object : Callback {
+                        fileUploader.uploadFile(croppedPhotoFile, "11", "", object : Callback {
                             override fun onFailure(call: Call, e: IOException) {
                                 Log.e("45", "Upload failed: ${e.message}")
                             }
@@ -468,16 +467,10 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 fragmentCameraBinding.inferenceTimeVal.text =
                     String.format("%d ms", inferenceTime)
 
-                //处理识别结果
-                val currentTime = System.currentTimeMillis()
-                // 每秒更新一次提示
-                if (currentTime - lastRecordTime >= recognitionInterval) {
-                    results?.let { recognitionResults?.addAll(it) }
-                    // 处理图像并记录结果
-                    recordAnalysisResult(results, "" + lastRecordTime)
 
-                    lastRecordTime = currentTime
-                }
+                // 处理图像并记录结果
+                recordAnalysisResult(results)
+
 
                 // Pass necessary information to OverlayView for drawing on the canvas
                 fragmentCameraBinding.overlay.setResults(
@@ -486,7 +479,7 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     imageWidth
                 )
 
-                Log.i("相机"," imageWith：$imageWidth, imageHeight $imageHeight")
+                Log.i("相机", " imageWith：$imageWidth, imageHeight $imageHeight")
 
                 // Force a redraw
                 fragmentCameraBinding.overlay.invalidate()
@@ -513,11 +506,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
 
     private fun recordAnalysisResult(
-        results: MutableList<Detection>?,
-        recordAnalysisResult: String
+        results: MutableList<Detection>?
     ) {
         // 处理图像并记录结果的逻辑
-        Log.d("", "记录时间戳 $recordAnalysisResult")
         // 创建一个 Set 集合，用于存放 List 中的数据
         val dataSet = HashSet<String>()
         for (result in results ?: LinkedList<Detection>()) {
@@ -528,20 +519,9 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             val left = boundingBox.left * scaleFactor
             val right = boundingBox.right * scaleFactor
 
-//            drawableText =
-//                result.categories[0].label + " " + String.format(
-//                    "%.2f",
-//                    result.categories[0].score
-//                ) +
-//                        "top :$top bottom: $bottom left: $left right: $right"
+
+
             dataSet.add(result.categories[0].label)
-        }
-        if (dataSet.size>5){
-//            Toast.makeText(context, "45°识别成功开始录图像", Toast.LENGTH_SHORT).show()
-            Log.i(tag,"45°识别成功开始录图像")
-//            saveImage()
-            // 在Activity或Fragment中调用以下代码来显示Toast消息
-//            Toast.makeText(context, "45°成功保存图像", Toast.LENGTH_SHORT).show()
         }
 
 
