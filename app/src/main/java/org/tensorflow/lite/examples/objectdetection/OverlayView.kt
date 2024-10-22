@@ -146,13 +146,21 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                 tipText = "请稍微离远";
                 Log.d("绘图层", "原始数据位置提示 请稍微离远")
             }
-            if (plateBoundingBox.left < 130L) {
+            if (plateBoundingBox.left < 120L) {
                 tipText = "请稍微请向左";
                 Log.d("绘图层", "原始数据位置提示 请稍微请向左")
             }
-            if (plateBoundingBox.right > 450L) {
+            if (plateBoundingBox.right > 430L) {
                 tipText = "请稍微请向右";
                 Log.d("绘图层", "原始数据位置提示 请稍微请向右")
+            }
+            if (plateBoundingBox.bottom - plateBoundingBox.top > 50L
+                &&plateBoundingBox.bottom - plateBoundingBox.top < 130L
+                &&plateBoundingBox.left >130L
+                &&plateBoundingBox.right < 430L
+
+            ){
+                tipText = "识别成功";
             }
             drawOneText(tipText, 300f, 260f, canvas)
 

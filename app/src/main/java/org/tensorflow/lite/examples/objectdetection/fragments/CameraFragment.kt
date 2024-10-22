@@ -104,20 +104,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     //从 Paused 状态恢复到 Resumed 状态时，系统会调用 onResume() 方法。
     override fun onResume() {
         super.onResume()
-//        // Make sure that all permissions are still present, since the
-//        // user could have removed them while the app was in paused state.
-//        //PermissionsFragment.hasPermissions(requireContext()) 是一个自定义方法，它通常用于检查应用是否具有特定权限，比如相机权限、存储权限等。如果应用没有所需的权限，条件判断为真。
-//        // Navigation.findNavController() 是 Navigation 组件提供的一个方法，用于查找与给定 Activity 相关联的 NavController
-//        if (!PermissionsFragment.hasPermissions(requireContext())) {
-//            //Navigation.findNavController() 是 Navigation 组件提供的一个方法，用于查找与给定 Activity 相关联的 NavController。
-//            //requireActivity() 返回当前 Fragment 所关联的 Activity。
-//            //R.id.fragment_container 是用于承载 Fragment 的容器的 ID。通常，这是在布局文件中定义的 NavHostFragment 的 ID。
-//            Navigation.findNavController(requireActivity(), R.id.fragment_container)
-//                .navigate(CameraFragmentDirections.actionCameraToPermissions())
-//        }
-//
-
-
         handler.post(timerRunnable)
     }
 

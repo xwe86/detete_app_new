@@ -563,9 +563,8 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             }
 
             //前机盖 前叶子板 前门  前保险杆
-            if (dataSet.size >= 3 && dataSet.containsAll(
+            if (dataSet.size >= 2 && dataSet.containsAll(
                     setOf(
-                        "backCover",
                         "backDoor",
                         "backBumper"
                     )

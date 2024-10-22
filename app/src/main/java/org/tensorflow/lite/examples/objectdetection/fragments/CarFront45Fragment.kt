@@ -575,6 +575,9 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 Log.i("车45度", "45°识别成功开始保存图像")
                 tipText = "45°识别成功";
                 showTipsText(tipText)
+                imageAnalyzer?.clearAnalyzer()
+                // 停止预览
+                cameraProvider?.unbind(preview);
                 return
             }
             if (targetBottom - targetTop < 90L) {
