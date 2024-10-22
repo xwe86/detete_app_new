@@ -104,19 +104,19 @@ class OverlayIDCardView(context: Context?, attrs: AttributeSet?) : View(context,
                     "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
                 )
 
-                if (boundingBox.bottom - boundingBox.top < 150L) {
+                if (boundingBox.bottom - boundingBox.top < 180L) {
                     tipText = "请靠近";
                     Log.d("绘图层", "原始数据位置提示 请靠近")
                 }
-                if (boundingBox.bottom - boundingBox.top > 225L) {
+                if (boundingBox.bottom - boundingBox.top > 200L) {
                     tipText = "请稍微离远";
                     Log.d("绘图层", "原始数据位置提示 请稍微离远")
                 }
-                if (boundingBox.left < 30L) {
+                if (boundingBox.left < 90L) {
                     tipText = "请稍微请向左";
                     Log.d("绘图层", "原始数据位置提示 请稍微请向右")
                 }
-                if (boundingBox.right > 530L) {
+                if (boundingBox.right > 500L) {
                     tipText = "请稍微请向右";
                     Log.d("绘图层", "原始数据位置提示 请稍微请向左")
                 }
