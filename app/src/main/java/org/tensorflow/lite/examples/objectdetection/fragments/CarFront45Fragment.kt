@@ -86,7 +86,7 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var lastRecordTime = 0L // 上次记录的时间戳
 
     //识别统计结果的间隔， 1s内目标数据出现了，就算识别成功
-    private val recognitionInterval = 100L
+    private val recognitionInterval = 80L
 
     private val displayManager by lazy {
         requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
@@ -500,7 +500,8 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         "overLayView",
                         " scaleFactor $scaleFactor , width：$viewWidth, height:$viewHeight, imageWith：$imageWidth, imageHeight $imageHeight"
                     )
-
+                }else{
+                    showTipsText("未识别到任何数据，请靠近车辆")
                 }
 
 
@@ -549,11 +550,11 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             tipText = "未识别到任何数据，请靠近车辆"
             showTipsText(tipText)
             return
-        } else if (!dataSet.contains("frontCover")) {
+        } else if (!dataSet.contains("frontdDoor")) {
             tipText = "未识别到车门，请靠近前车门"
             showTipsText(tipText)
             return
-        } else if (dataSet.contains("frontCover")) {
+        } else if (dataSet.contains("frontdDoor")) {
             val matchFound = dataSet.any { it.startsWith("back") && it != "backDoor" }
             if (matchFound) {
                 tipText = "识别到后车组件，请向左移动"

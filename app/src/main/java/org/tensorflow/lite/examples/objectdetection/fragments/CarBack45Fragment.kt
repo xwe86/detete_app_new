@@ -500,6 +500,8 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         " scaleFactor $scaleFactor , width：$viewWidth, height:$viewHeight, imageWith：$imageWidth, imageHeight $imageHeight"
                     )
 
+                }else{
+                    showTipsText("未识别到任何数据，请靠近车辆")
                 }
 
 
@@ -548,14 +550,14 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             tipText = "未识别到任何数据，请靠近车辆"
             showTipsText(tipText)
             return
-        } else if (!dataSet.contains("frontCover")) {
-            tipText = "未识别到车门，请靠近前车门"
+        } else if (!dataSet.contains("backDoor")) {
+            tipText = "未识别到车门，请靠近后车门"
             showTipsText(tipText)
             return
-        } else if (dataSet.contains("frontCover")) {
-            val matchFound = dataSet.any { it.startsWith("back") && it != "backDoor" }
+        } else if (dataSet.contains("backDoor")) {
+            val matchFound = dataSet.any { it.startsWith("front") && it != "frontdDoor" }
             if (matchFound) {
-                tipText = "识别到后车组件，请向左移动"
+                tipText = "识别到前车组件，请向左移动"
                 showTipsText(tipText)
                 return
             }
@@ -563,10 +565,10 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
             //前机盖 前叶子板 前门  前保险杆
             if (dataSet.size >= 4 && dataSet.containsAll(
                     setOf(
-                        "frontCover",
-                        "frontdDoor",
-                        "frontFender",
-                        "frontBumper"
+                        "backCover",
+                        "backDoor",
+                        "backFender",
+                        "backBumper"
                     )
                 )
             ) {
