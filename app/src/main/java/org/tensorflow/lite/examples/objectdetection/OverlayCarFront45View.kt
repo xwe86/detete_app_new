@@ -140,8 +140,8 @@ class OverlayCarFront45View(context: Context?, attrs: AttributeSet?) : View(cont
 
 
         if (results.isNotEmpty()) {
-            drawOneRect(targetTop, targetBottom, targetLeft, targetRight, canvas)
-            drawOneRect(10f, 280f, 80f, 580f, canvas)
+//            drawOneRect(targetTop, targetBottom, targetLeft, targetRight, canvas)
+//            drawOneRect(10f, 280f, 80f, 580f, canvas)
         }
 
 

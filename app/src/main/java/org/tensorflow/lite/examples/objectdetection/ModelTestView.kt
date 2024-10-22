@@ -87,9 +87,6 @@ class ModelTestView(context: Context?, attrs: AttributeSet?) : View(context, att
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-        if (results.isNotEmpty()) {
-            drawOneRect(120f, 180f, 200f, 350f, canvas)
-        }
 
 
         for (result in results) {

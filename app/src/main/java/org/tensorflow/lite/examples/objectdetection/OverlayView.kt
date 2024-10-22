@@ -87,7 +87,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-            drawOneRect(120f, 180f, 200f, 350f, canvas)
+            drawOneRect(100f, 200f, 180f, 360f, canvas)
 
 
         for (result in results) {
@@ -100,6 +100,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
 
             var tipText = "识别成功";
+
+
             if (checkIsTarget(result)) {
                 Log.d(
                     "绘图层",
@@ -122,7 +124,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     Log.d("绘图层", "原始数据位置提示 请稍微请向右")
                 }
                 drawOneText(tipText, 300f, 260f ,canvas)
-
             }
 
 
