@@ -87,7 +87,10 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-        drawOneRect(90f, 210f, 100f, 500f, canvas)
+        if (results.isNotEmpty()) {
+            drawOneRect(120f, 180f, 200f, 350f, canvas)
+        }
+
 
         for (result in results) {
             val boundingBox = result.boundingBox
@@ -105,21 +108,21 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
                 )
                 var tipText = "";
-                if (boundingBox.bottom - boundingBox.top < 70L) {
+                if (boundingBox.bottom - boundingBox.top < 50L) {
                     tipText = "请靠近";
                     Log.d("绘图层", "原始数据位置提示 请靠近")
                 }
-                if (boundingBox.bottom - boundingBox.top > 120L) {
+                if (boundingBox.bottom - boundingBox.top > 130L) {
                     tipText = "请稍微离远";
                     Log.d("绘图层", "原始数据位置提示 请稍微离远")
                 }
-                if (boundingBox.left < 70L) {
+                if (boundingBox.left < 130L) {
                     tipText = "请稍微请向右";
-                    Log.d("绘图层", "原始数据位置提示 请稍微请向右")
-                }
-                if (boundingBox.right > 500L) {
-                    tipText = "请稍微请向左";
                     Log.d("绘图层", "原始数据位置提示 请稍微请向左")
+                }
+                if (boundingBox.right > 450L) {
+                    tipText = "请稍微请向左";
+                    Log.d("绘图层", "原始数据位置提示 请稍微请向右")
                 }
                 drawOneText(tipText, 300f, 260f ,canvas)
 
