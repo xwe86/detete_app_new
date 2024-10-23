@@ -22,10 +22,16 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
+import android.os.Bundle
 import android.util.AttributeSet
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.core.content.ContextCompat
+import org.tensorflow.lite.examples.objectdetection.databinding.FrontDoorCameraBinding
+import org.tensorflow.lite.examples.objectdetection.fragments.PermissionsFragment
 import java.util.LinkedList
 import kotlin.math.max
 import org.tensorflow.lite.task.vision.detector.Detection
@@ -86,111 +92,114 @@ class FrontDoorOverlayView(context: Context?, attrs: AttributeSet?) : View(conte
 
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
+        var rectTop = 50f
+        var rectBottom = 290f
+        var rectLeft = 90f
+        var rectRight = 550f
+        drawOneRect(rectTop, rectBottom, rectLeft, rectRight, canvas)
 
-        drawOneRect(50f, 230f, 100f, 500f, canvas)
-
-        var identifyFrontDoorFlag = false
-        var handlerResults = arrayListOf<Detection>()
+//        var identifyFrontDoorFlag = false
+//        var handlerResults = arrayListOf<Detection>()
+//        for (result in results) {
+//            if (checkIsTarget(result)){
+//                identifyFrontDoorFlag=true
+//                handlerResults.add(result)
+//            }
+//        }
+//        if(!identifyFrontDoorFlag){
+//            handlerResults.addAll(this.results)
+//        }
+//
         for (result in results) {
-            if (checkIsTarget(result)){
-                identifyFrontDoorFlag=true
-                handlerResults.add(result)
-            }
-        }
-        if(!identifyFrontDoorFlag){
-            handlerResults.addAll(this.results)
-        }
+            if(checkIsTarget(result)) {
+                val boundingBox = result.boundingBox
 
-        for (result in handlerResults) {
-            val boundingBox = result.boundingBox
+                val top = boundingBox.top * scaleFactor
+                val bottom = boundingBox.bottom * scaleFactor
+                val left = boundingBox.left * scaleFactor
+                val right = boundingBox.right * scaleFactor
+//
+//            var identifyFlag = true
+//            var tipText = "识别成功";
+//            var minusErr = 40f
+//            if (checkIsTarget(result)) {
+//                Log.d(
+//                    "绘图层",
+//                    "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
+//                )
+//                if (boundingBox.bottom - boundingBox.top < 130L) {
+//                    tipText = "请稍微靠近";
+//                    Log.d("绘图层", "原始数据位置提示 请靠近")
+//                    identifyFlag = false
+//                }
+//                if (boundingBox.bottom - boundingBox.top > rectBottom-rectTop+minusErr) {
+//                    tipText = "请稍微离远";
+//                    Log.d("绘图层", "原始数据位置提示 请稍微离远")
+//                    identifyFlag = false
+//                }
+//                if (boundingBox.left < rectLeft) {
+//                    tipText = "请稍微向左"
+//                    Log.d("绘图层", "原始数据位置提示 请稍微向右")
+//                    identifyFlag = false
+//                }
+//                if (boundingBox.right > rectRight) {
+//                    tipText = "请稍微向右"
+//                    Log.d("绘图层", "原始数据位置提示 请稍微向左")
+//                    identifyFlag = false
+//                }
+//                if (boundingBox.top < rectTop-minusErr) {
+//                    tipText = "请稍微向上"
+//                    Log.d("绘图层", "原始数据位置提示 请稍微向上")
+//                    identifyFlag = false
+//                }
+//                if (boundingBox.bottom > rectBottom) {
+//                    tipText = "请稍微向下"
+//                    Log.d("绘图层", "原始数据位置提示 请稍微向下")
+//                    identifyFlag = false
+//                }
+//                drawOneText(tipText, 300f, 260f ,canvas)
+//
+//            }else{
+//                Log.d(
+//                    "绘图层",
+//                    "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
+//                )
+//                drawOneText("请走到车辆前门位置", 300f, 260f ,canvas)
+//                identifyFlag = false
+//            }
+//            if(identifyFlag){
+//                //autoPreCaptureImage()
+//            }
+//
+                // Draw bounding box around detected objects
+                val drawableRect = RectF(left, top, right, bottom)
+                canvas.drawRect(drawableRect, boxPaint)
 
-            val top = boundingBox.top * scaleFactor
-            val bottom = boundingBox.bottom * scaleFactor
-            val left = boundingBox.left * scaleFactor
-            val right = boundingBox.right * scaleFactor
-
-            var identifyFlag = true
-            var tipText = "识别成功";
-            if (checkIsTarget(result)) {
-                Log.d(
-                    "绘图层",
-                    "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
+                // Create text to display alongside detected objects
+                val drawableText = result.categories[0].label + " " + String.format(
+                    "%.2f",
+                    result.categories[0].score
                 )
-                if (boundingBox.bottom - boundingBox.top < 100L) {
-                    tipText = "请稍微靠近";
-                    Log.d("绘图层", "原始数据位置提示 请靠近")
-                    identifyFlag = false
-                }
-                if (boundingBox.bottom - boundingBox.top > 250L) {
-                    tipText = "请稍微离远";
-                    Log.d("绘图层", "原始数据位置提示 请稍微离远")
-                    identifyFlag = false
-                }
-                if (boundingBox.left < 100L) {
-                    tipText = "请稍微向左"
-                    Log.d("绘图层", "原始数据位置提示 请稍微向右")
-                    identifyFlag = false
-                }
-                if (boundingBox.right > 500L) {
-                    tipText = "请稍微向右"
-                    Log.d("绘图层", "原始数据位置提示 请稍微向左")
-                    identifyFlag = false
-                }
-                if (boundingBox.top < 50L) {
-                    tipText = "请稍微向上"
-                    Log.d("绘图层", "原始数据位置提示 请稍微向上")
-                    identifyFlag = false
-                }
-                if (boundingBox.bottom > 230L) {
-                    tipText = "请稍微向下"
-                    Log.d("绘图层", "原始数据位置提示 请稍微向下")
-                    identifyFlag = false
-                }
-                drawOneText(tipText, 300f, 260f ,canvas)
 
-            }else{
-                Log.d(
-                    "绘图层",
-                    "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
+                // Draw rect behind display text
+                textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)
+                val textWidth = bounds.width()
+                val textHeight = bounds.height()
+                val rightPoint = left + textWidth + Companion.BOUNDING_RECT_TEXT_PADDING
+                val bottomPoint = top + textHeight + Companion.BOUNDING_RECT_TEXT_PADDING
+                canvas.drawRect(
+                    left,
+                    top,
+                    rightPoint,
+                    bottomPoint,
+                    textBackgroundPaint
                 )
-                drawOneText("请走到车辆前门位置", 300f, 260f ,canvas)
-                identifyFlag = false
+                // Draw text for detected object
+                canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
             }
-
-
-            // Draw bounding box around detected objects
-            val drawableRect = RectF(left, top, right, bottom)
-            canvas.drawRect(drawableRect, boxPaint)
-
-            // Create text to display alongside detected objects
-            val drawableText = result.categories[0].label + " " + String.format("%.2f", result.categories[0].score)
-
-            // Draw rect behind display text
-            textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)
-            val textWidth = bounds.width()
-            val textHeight = bounds.height()
-            val rightPoint = left + textWidth + Companion.BOUNDING_RECT_TEXT_PADDING
-            val bottomPoint = top + textHeight + Companion.BOUNDING_RECT_TEXT_PADDING
-            canvas.drawRect(
-                left,
-                top,
-                rightPoint,
-                bottomPoint,
-                textBackgroundPaint
-            )
-            if (checkIsTarget(result)) {
-                Log.d(
-                    "绘图层",
-                    "位置数据 left:${left} top:${top} right: ${rightPoint}, bottome: ${bottomPoint} 识别到：${result.categories[0].label}"
-                )
-            }
-            // Draw text for detected object
-            canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
         }
     }
-    fun checkIsTarget(result:Detection ): Boolean {
-        return "frontdDoor" == result.categories[0].label
-    }
+
     fun setResults(
       detectionResults: MutableList<Detection>,
       imageHeight: Int,
@@ -221,20 +230,9 @@ class FrontDoorOverlayView(context: Context?, attrs: AttributeSet?) : View(conte
         canvas.drawRect(drawableRect, tipBoxPaint)
     }
 
-
-
-    fun drawOneText(tipText: String,
-        top: Float, bottom: Float,
-        canvas: Canvas
-    ) {
-
-        val top = top * scaleFactor
-        val bottom = bottom * scaleFactor
-
-        canvas.drawText(tipText, top, bottom ,textTipPaint )
-
+    fun checkIsTarget(result:Detection): Boolean {
+        return "frontdDoor" == result.categories[0].label
     }
-
 
     companion object {
         private const val BOUNDING_RECT_TEXT_PADDING = 8

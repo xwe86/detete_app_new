@@ -25,7 +25,9 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.RectF
 import android.graphics.drawable.ColorDrawable
 import android.hardware.display.DisplayManager
 import android.os.Build
@@ -47,6 +49,8 @@ import com.android.example.cameraxbasic.utils.ANIMATION_SLOW_MILLIS
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Response
+import org.tensorflow.lite.examples.objectdetection.FrontDoorOverlayView
+import org.tensorflow.lite.examples.objectdetection.FrontDoorOverlayView.Companion
 import org.tensorflow.lite.examples.objectdetection.ObjectDetectorHelper
 import org.tensorflow.lite.examples.objectdetection.R
 import org.tensorflow.lite.examples.objectdetection.databinding.FragmentCameraBinding
@@ -83,6 +87,9 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
+    private val cameraSelector: CameraSelector? = null
+    private var imageSaveFlag: Boolean = false
+    private var uploadPhotoFile: File? = null
 
     /** Blocking camera operations are performed using this executor */
     private lateinit var cameraExecutor: ExecutorService
@@ -221,7 +228,7 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
         // CameraProvider
         val cameraProvider =
-            cameraProvider ?: throw IllegalStateException("Camera initialization failed.")
+            cameraProvider?: throw IllegalStateException("Camera initialization failed.")
         val metrics = windowManager.getCurrentWindowMetrics().bounds
         val screenAspectRatio = aspectRatio(metrics.width(), metrics.height())
         Log.d(TAG, "Preview aspect ratio: $screenAspectRatio")
@@ -229,7 +236,7 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
         // CameraSelector - makes assumption that we're only using the back camera
         val cameraSelector =
-            CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+            cameraSelector?: CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
         lastRecordTime = System.currentTimeMillis();
 
         // Preview. Only using the 4:3 ratio because this is the closest to our models
@@ -284,9 +291,18 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         // Listener for button used to capture photo
         //监听按钮拍照
         fragmentCameraBinding?.cameraCaptureButton?.setOnClickListener {
-            // 存图
-            saveImage()
+            autoPreCaptureImage()
+        }
 
+        fragmentCameraBinding?.confirmUploadBtn?.setOnClickListener {
+            // 存图
+            uploadPhotoFile?.let { it -> uploadPhotoFile(it) }
+            returnImage()
+        }
+
+        fragmentCameraBinding?.confirmRetryBtn?.setOnClickListener {
+            uploadPhotoFile?.delete()
+            returnImage()
         }
 
         // Must unbind the use-cases before rebinding them
@@ -304,6 +320,36 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         } catch (exc: Exception) {
             Log.e(TAG, "Use case binding failed", exc)
         }
+    }
+
+    private fun autoPreCaptureImage() {
+        saveImage()
+//        stopImageAnalyzer()
+//        preview?.setSurfaceProvider(null)
+        cameraProvider?.unbind(preview)
+        imageAnalyzer?.clearAnalyzer()
+
+        fragmentCameraBinding?.confirmUploadBtn.visibility = View.VISIBLE
+        fragmentCameraBinding?.confirmRetryBtn.visibility = View.VISIBLE
+        fragmentCameraBinding?.cameraCaptureButton.visibility = View.GONE
+    }
+    private fun returnImage() {
+//        cameraProvider?.unbindAll()
+//        val cameraSelector =
+//            CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+//        cameraProvider?.bindToLifecycle(
+//            this, cameraSelector, preview, imageCapture, imageAnalyzer
+//        )
+        // Wait for the views to be properly laid out
+        fragmentCameraBinding.viewFinder.post {
+            // Set up the camera and its use cases
+            setUpCamera()
+        }
+        // Attach the viewfinder's surface provider to preview use case
+        preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
+        fragmentCameraBinding?.confirmUploadBtn.visibility = View.GONE
+        fragmentCameraBinding?.confirmRetryBtn.visibility = View.GONE
+        fragmentCameraBinding?.cameraCaptureButton.visibility = View.VISIBLE
     }
 
     /**
@@ -342,64 +388,80 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     }
 
                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                        val savedUri = output.savedUri
-                        Log.d(TAG, "Photo capture succeeded: $savedUri")
-                        val originalBitmap = BitmapFactory.decodeFile( "/storage/emulated/0//Pictures/test/"+name+".jpg" )
-                        val x = 0 // 裁剪区域的左上角x坐标
-                        val y = 0 // 裁剪区域的左上角y坐标
-                        val width = originalBitmap.width*0.8 // 裁剪区域的宽度
-                        val height = originalBitmap.height*0.7 // 裁剪区域的高度
+                        if(!imageSaveFlag) {
+                            imageSaveFlag=true
+                            val savedUri = output.savedUri
+                            Log.d(TAG, "Photo capture succeeded: $savedUri")
+                            val originalBitmap =
+                                BitmapFactory.decodeFile("/storage/emulated/0//Pictures/test/" + name + ".jpg")
+                            val x = 0 // 裁剪区域的左上角x坐标
+                            val y = 0 // 裁剪区域的左上角y坐标
+                            val width = originalBitmap.width * 0.8 // 裁剪区域的宽度
+                            val height = originalBitmap.height * 0.7 // 裁剪区域的高度
 
 
-                        // 裁剪原始图片
-                        val croppedBitmap = Bitmap.createBitmap(originalBitmap, x, y, width.toInt(), height.toInt())
-
-
-                        // 保存裁剪后的图片到新的文件
-                        val croppedPhotoFile: File =
-                            File("/storage/emulated/0//Pictures/test/3.jpg")
-                        try {
-                            FileOutputStream(croppedPhotoFile).use { out ->
-                                croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                            }
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                        }
-
-
-                        // 清理资源
-                        originalBitmap.recycle()
-                        croppedBitmap.recycle()
-                        // 获取全局随机 ID
-                        val globalRandomId: String = GlobalRandomIdManager.getGlobalRandomId();
-                        Log.d("camera", "Global Random ID: $globalRandomId")
-
-
-
-                        val fileUploader = FileUploader()
-                        fileUploader.uploadFile(croppedPhotoFile, "3", "前门",object : Callback {
-                            override fun onFailure(call: Call, e: IOException) {
-                                Log.e("45", "Upload failed: ${e.message}")
-                            }
-
-                            override fun onResponse(call: Call, response: Response) {
-                                if (response.isSuccessful) {
-                                    Log.d("45", "Upload successful: ${response.body?.string()}")
-                                } else {
-                                    Log.e("45", "Upload failed: ${response.code}")
-                                }
-                            }
-                        })
-
-
-                        // Implicit broadcasts will be ignored for devices running API level >= 24
-                        // so if you only target API level 24+ you can remove this statement
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                            // Suppress deprecated Camera usage needed for API level 23 and below
-                            @Suppress("DEPRECATION")
-                            requireActivity().sendBroadcast(
-                                Intent(android.hardware.Camera.ACTION_NEW_PICTURE, savedUri)
+                            // 裁剪原始图片
+                            val croppedBitmap = Bitmap.createBitmap(
+                                originalBitmap,
+                                x,
+                                y,
+                                width.toInt(),
+                                height.toInt()
                             )
+
+
+                            // 保存裁剪后的图片到新的文件
+                            uploadPhotoFile =
+                                File("/storage/emulated/0//Pictures/test/3.jpg")
+                            try {
+                                FileOutputStream(uploadPhotoFile).use { out ->
+                                    croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                                }
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
+
+
+                            // 清理资源
+                            originalBitmap.recycle()
+                            croppedBitmap.recycle()
+                            // 获取全局随机 ID
+                            val globalRandomId: String = GlobalRandomIdManager.getGlobalRandomId();
+                            Log.d("camera", "Global Random ID: $globalRandomId")
+
+//                            val fileUploader = FileUploader()
+//                            fileUploader.uploadFile(
+//                                croppedPhotoFile,
+//                                "3",
+//                                "前门",
+//                                object : Callback {
+//                                    override fun onFailure(call: Call, e: IOException) {
+//                                        Log.e("45", "Upload failed: ${e.message}")
+//                                    }
+//
+//                                    override fun onResponse(call: Call, response: Response) {
+//                                        if (response.isSuccessful) {
+//                                            Log.d(
+//                                                "45",
+//                                                "Upload successful: ${response.body?.string()}"
+//                                            )
+//                                        } else {
+//                                            Log.e("45", "Upload failed: ${response.code}")
+//                                        }
+//                                    }
+//                                })
+
+
+                            // Implicit broadcasts will be ignored for devices running API level >= 24
+                            // so if you only target API level 24+ you can remove this statement
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                                // Suppress deprecated Camera usage needed for API level 23 and below
+                                @Suppress("DEPRECATION")
+                                requireActivity().sendBroadcast(
+                                    Intent(android.hardware.Camera.ACTION_NEW_PICTURE, savedUri)
+                                )
+                            }
+                            imageSaveFlag=false
                         }
                     }
                 })
@@ -457,6 +519,29 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         imageAnalyzer?.targetRotation = fragmentCameraBinding.viewFinder.display.rotation
     }
 
+    private fun uploadPhotoFile(croppedPhotoFile:File){
+        val fileUploader = FileUploader()
+        fileUploader.uploadFile(
+            croppedPhotoFile,
+            "3",
+            "前门",
+            object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("45", "Upload failed: ${e.message}")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (response.isSuccessful) {
+                        Log.d(
+                            "45",
+                            "Upload successful: ${response.body?.string()}"
+                        )
+                    } else {
+                        Log.e("45", "Upload failed: ${response.code}")
+                    }
+                }
+            })
+    }
 
     // 停止图像分析
     private fun stopImageAnalyzer() {
@@ -488,13 +573,13 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 //处理识别结果
                 val currentTime = System.currentTimeMillis()
                 // 每秒更新一次提示
-                if (currentTime - lastRecordTime >= recognitionInterval) {
+                //if (currentTime - lastRecordTime >= recognitionInterval) {
                     results?.let { recognitionResults?.addAll(it) }
                     // 处理图像并记录结果
                     recordAnalysisResult(results, "" + lastRecordTime)
 
                     lastRecordTime = currentTime
-                }
+                //}
 
                 // Pass necessary information to OverlayView for drawing on the canvas
                 fragmentCameraBinding.overlay.setResults(
@@ -520,7 +605,6 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
     }
 
-
     /**
      * 设置提示文案
      */
@@ -528,45 +612,93 @@ class FrontDoorFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         fragmentCameraBinding.detectTip.text = text
     }
 
-
     private fun recordAnalysisResult(
         results: MutableList<Detection>?,
         recordAnalysisResult: String
     ) {
         // 处理图像并记录结果的逻辑
         Log.d("", "记录时间戳 $recordAnalysisResult")
-        // 创建一个 Set 集合，用于存放 List 中的数据
-        val dataSet = HashSet<String>()
-        for (result in results ?: LinkedList<Detection>()) {
+        var rectTop = 50f
+        var rectBottom = 290f
+        var rectLeft = 90f
+        var rectRight = 550f
+//        drawOneRect(rectTop, rectBottom, rectLeft, rectRight, canvas)
+
+        var identifyFrontDoorFlag = false
+        var handlerResults = arrayListOf<Detection>()
+        results?.forEach { result ->
+            if (checkIsTarget(result)){
+                identifyFrontDoorFlag=true
+                handlerResults.add(result)
+            }
+        }
+        if(!identifyFrontDoorFlag){
+            results?.let { handlerResults.addAll(it) }
+        }
+
+        for (result in handlerResults) {
             val boundingBox = result.boundingBox
-            var scaleFactor: Float = 1f
-            val top = boundingBox.top * scaleFactor
-            val bottom = boundingBox.bottom * scaleFactor
-            val left = boundingBox.left * scaleFactor
-            val right = boundingBox.right * scaleFactor
+//            val top = boundingBox.top * scaleFactor
+//            val bottom = boundingBox.bottom * scaleFactor
+//            val left = boundingBox.left * scaleFactor
+//            val right = boundingBox.right * scaleFactor
 
-//            drawableText =
-//                result.categories[0].label + " " + String.format(
-//                    "%.2f",
-//                    result.categories[0].score
-//                ) +
-//                        "top :$top bottom: $bottom left: $left right: $right"
-            dataSet.add(result.categories[0].label)
+            var identifyFlag = true
+            var tipText = "识别成功";
+            var minusErr = 20f
+            if (checkIsTarget(result)) {
+                Log.d(
+                    "绘图层",
+                    "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
+                )
+                if (boundingBox.bottom - boundingBox.top < 180L) {
+                    tipText = "请稍微靠近";
+                    Log.d("绘图层", "原始数据位置提示 请靠近")
+                    identifyFlag = false
+                }
+                if (boundingBox.bottom - boundingBox.top > rectBottom-rectTop+minusErr) {
+                    tipText = "请稍微离远";
+                    Log.d("绘图层", "原始数据位置提示 请稍微离远")
+                    identifyFlag = false
+                }
+                if (boundingBox.left < rectLeft) {
+                    tipText = "请稍微向左"
+                    Log.d("绘图层", "原始数据位置提示 请稍微向右")
+                    identifyFlag = false
+                }
+                if (boundingBox.right > rectRight) {
+                    tipText = "请稍微向右"
+                    Log.d("绘图层", "原始数据位置提示 请稍微向左")
+                    identifyFlag = false
+                }
+                if (boundingBox.top < rectTop-minusErr) {
+                    tipText = "请稍微向上"
+                    Log.d("绘图层", "原始数据位置提示 请稍微向上")
+                    identifyFlag = false
+                }
+                if (boundingBox.bottom > rectBottom) {
+                    tipText = "请稍微向下"
+                    Log.d("绘图层", "原始数据位置提示 请稍微向下")
+                    identifyFlag = false
+                }
+                showTipsText(tipText)
+
+            }else{
+                Log.d(
+                    "绘图层",
+                    "原始数据 top:${boundingBox.top} bottom:${boundingBox.bottom} left: ${boundingBox.left}, right: ${boundingBox.right} 识别到：${result.categories[0].label}"
+                )
+                showTipsText("请走到车辆前门位置")
+                identifyFlag = false
+            }
+            if(identifyFlag){
+                autoPreCaptureImage()
+            }
         }
-        if (dataSet.size>5){
-//            Toast.makeText(context, "45°识别成功开始录图像", Toast.LENGTH_SHORT).show()
-            Log.i(tag,"45°识别成功开始录图像")
-//            saveImage()
-            // 在Activity或Fragment中调用以下代码来显示Toast消息
-//            Toast.makeText(context, "45°成功保存图像", Toast.LENGTH_SHORT).show()
-        }
-
-
-        fragmentCameraBinding.detectData.text = dataSet.joinToString(separator = ", ")
-
-
     }
-
+    fun checkIsTarget(result:Detection ): Boolean {
+        return "frontdDoor" == result.categories[0].label
+    }
 
     /**
      * We need a display listener for orientation changes that do not trigger a configuration
