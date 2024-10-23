@@ -175,15 +175,15 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
         // Listener for button used to capture photo
         //监听按钮拍照
-        fragmentCameraBinding?.cameraReopenButton?.setOnClickListener {
-
-            // Wait for the views to be properly laid out
-            fragmentCameraBinding.viewFinder.post {
-                // Set up the camera and its use cases
-                setUpCamera()
-            }
-
-        }
+//        fragmentCameraBinding?.cameraReopenButton?.setOnClickListener {
+//
+//            // Wait for the views to be properly laid out
+//            fragmentCameraBinding.viewFinder.post {
+//                // Set up the camera and its use cases
+//                setUpCamera()
+//            }
+//
+//        }
 
         showOrNoShowView()
     }
@@ -334,7 +334,7 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         val x = 0 // 裁剪区域的左上角x坐标
                         val y = 0 // 裁剪区域的左上角y坐标
                         val width = originalBitmap.width // 裁剪区域的宽度
-                        val height = originalBitmap.height * 0.6 // 裁剪区域的高度
+                        val height = originalBitmap.height * 0.7// 裁剪区域的高度
 
 
                         // 裁剪原始图片
@@ -609,7 +609,7 @@ class CarFront45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 tipText = "45°识别成功";
                 showTipsText(tipText)
                 //自动拍照
-                autoCapture()
+//                autoCapture()
 
                 return
             }

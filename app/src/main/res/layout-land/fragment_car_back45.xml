@@ -180,21 +180,21 @@
             android:background="@drawable/ic_shutter"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintVertical_bias="0.4"
+            app:layout_constraintVertical_bias="0.5"
             app:layout_constraintEnd_toEndOf="parent"
             android:contentDescription="@string/capture_button_alt" />
-        <ImageButton
-            android:id="@+id/camera_reopen_button"
-            android:layout_width="@dimen/round_button_large"
-            android:layout_height="@dimen/round_button_large"
-            android:layout_marginEnd="@dimen/shutter_button_margin"
-            android:scaleType="fitCenter"
-            android:background="@drawable/ic_switch"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintVertical_bias="0.8"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:contentDescription="@string/capture_button_alt" />
+<!--        <ImageButton-->
+<!--            android:id="@+id/camera_reopen_button"-->
+<!--            android:layout_width="@dimen/round_button_large"-->
+<!--            android:layout_height="@dimen/round_button_large"-->
+<!--            android:layout_marginEnd="@dimen/shutter_button_margin"-->
+<!--            android:scaleType="fitCenter"-->
+<!--            android:background="@drawable/ic_switch"-->
+<!--            app:layout_constraintTop_toTopOf="parent"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintVertical_bias="0.8"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"-->
+<!--            android:contentDescription="@string/capture_button_alt" />-->
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 

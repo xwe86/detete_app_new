@@ -172,15 +172,15 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
         // Listener for button used to capture photo
         //监听按钮拍照
-        fragmentCameraBinding?.cameraReopenButton?.setOnClickListener {
+//        fragmentCameraBinding?.cameraReopenButton?.setOnClickListener {
+//
+//            // Wait for the views to be properly laid out
+//            fragmentCameraBinding.viewFinder.post {
+//                // Set up the camera and its use cases
+//                setUpCamera()
+//            }
+//        }
 
-            // Wait for the views to be properly laid out
-            fragmentCameraBinding.viewFinder.post {
-                // Set up the camera and its use cases
-                setUpCamera()
-            }
-
-        }
         showOrNoShowView()
     }
 
@@ -317,7 +317,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                         val x = 0 // 裁剪区域的左上角x坐标
                         val y = 0 // 裁剪区域的左上角y坐标
                         val width = originalBitmap.width // 裁剪区域的宽度
-                        val height = originalBitmap.height * 0.6 // 裁剪区域的高度
+                        val height = originalBitmap.height * 0.7 // 裁剪区域的高度
 
 
                         // 裁剪原始图片
@@ -519,7 +519,7 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 targetBottom = maxOf(targetBottom, result.boundingBox.bottom)
                 targetLeft = minOf(targetLeft, result.boundingBox.left)
                 targetRight = maxOf(targetRight, result.boundingBox.right)
-                Log.i("后45","识别的边界值：$targetTop $targetBottom $targetLeft $targetRight")
+                Log.i("后45", "识别的边界值：$targetTop $targetBottom $targetLeft $targetRight")
             }
 
 
@@ -529,7 +529,9 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                 showTipsText(tipText)
                 return
             } else if (validKeySet.contains("backDoor")) {
-                val matchFound = validKeySet.any { it.startsWith("front") && it != "frontdDoor" }
+                //部分车型的后背箱会识别成前发动机盖
+                val matchFound =
+                    validKeySet.any { it.startsWith("front") && it != "frontdDoor" && it != "frontCover" }
                 if (matchFound) {
                     tipText = "识别到前车组件，请向左移动"
                     showTipsText(tipText)
@@ -544,12 +546,12 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
                     if (frontDoorLeft != null) {
                         if (frontDoorLeft < backDoorLeft!!) {
                             tipText = "当前位置在左边，请右移到右后45度"
-                            showTipsText(tipText)
+//                            showTipsText(tipText)
                             return
                         } else {
-                            tipText = "当前位置在右边，请向左移动靠近后背箱"
-                            showTipsText(tipText)
-                            return
+                            tipText = "当前位置在右边，请向左移动靠近后备箱"
+//                            showTipsText(tipText)
+//                            return
                         }
                     }
                 }
@@ -559,46 +561,48 @@ class CarBack45Fragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
                 if (targetBottom - targetTop < 90L) {
                     tipText = "请靠近";
-                    showTipsText(tipText)
-                    Log.d("绘图层", "原始数据位置提示 请靠近")
-                    return
+//                    showTipsText(tipText)
+//                    return
                 }
                 if (targetBottom - targetTop > 225L) {
                     tipText = "请稍微离远";
-                    showTipsText(tipText)
-                    Log.d("绘图层", "原始数据位置提示 请稍微离远")
-                    return
+//                    showTipsText(tipText)
+//                    return
                 }
-                if (targetBottom <220L){
+                if (targetBottom < 220L) {
                     tipText = "请稍微放抬高手机";
-                    showTipsText(tipText)
-                    return
+//                    showTipsText(tipText)
+//                    return
                 }
                 if (targetLeft < 10L) {
                     tipText = "请稍微请向左";
-                    showTipsText(tipText)
-                    Log.d("绘图层", "原始数据位置提示 请稍微请向左")
-                    return
+//                    showTipsText(tipText)
+//                    return
                 }
                 if (targetRight > 580L) {
                     tipText = "请稍微请向右";
-                    showTipsText(tipText)
-                    Log.d("绘图层", "原始数据位置提示 请稍微请向右")
-                    return
+//                    showTipsText(tipText)
+//                    return
                 }
-                //前机盖 前叶子板 前门  前保险杆
-                if (validKeySet.size >= 2 && validKeySet.containsAll(
+                //
+                if (validKeySet.size >= 2 && (validKeySet.containsAll(
                         setOf(
                             "backDoor", "backBumper"
                         )
-                    )
+                    ) || (validKeySet.containsAll(
+                        setOf(
+                            "backDoor", "frontBumper"
+                        )
+                    )))
                 ) {
                     Log.i("车45度", "45°识别成功开始保存图像")
                     tipText = "45°识别成功";
                     showTipsText(tipText)
-                    autoCapture()
-                    return
+//                    autoCapture()
+
+//                    return
                 }
+                showTipsText(tipText)
 
             }
         }
